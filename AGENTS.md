@@ -45,34 +45,42 @@ This participant has a dedicated static preview space:
 
 When creating browser-viewable demos, reports, screenshots, or static artifacts, write/copy the final public files into /srv/paperclip/previews/isaac-anderson/. Do not write into another participant's preview folder. The preview folder is owned by paperclip and is intended for this company only.
 
-# WordPress sandbox option
+# WordPress sandbox request option
 
 Do **not** set up WordPress unless the participant's project actually needs it.
 
-If a WordPress/WooCommerce/plugin/theme sandbox is needed, the Chief of Staff may start one on demand using the admin-approved helper:
+If a WordPress/WooCommerce/plugin/theme sandbox is needed, request the single approved sandbox for this company by writing this file:
 
 ```bash
-sudo /usr/local/bin/paperclip-wordpress-sandbox start isaac-anderson
+mkdir -p wordpress-sandbox
+cat > wordpress-sandbox/request.json <<'JSON'
+{
+  "action": "start",
+  "slug": "isaac-anderson",
+  "reason": "WordPress is needed for this participant project"
+}
+JSON
 ```
 
-Useful commands:
+Then wait up to a minute and check:
 
 ```bash
-sudo /usr/local/bin/paperclip-wordpress-sandbox status isaac-anderson
-sudo /usr/local/bin/paperclip-wordpress-sandbox stop isaac-anderson
+cat wordpress-sandbox/result.json
 ```
 
-After startup, the sandbox URL is:
+The sandbox URL is:
 
 ```text
 https://preview2.updraftailabs.com/live/isaac-anderson/
 ```
 
+To check or stop it, write a new request with `"action": "status"` or `"action": "stop"` and the same slug, then read `wordpress-sandbox/result.json` again.
+
 Rules:
 
+- There is **one WordPress sandbox per participant/company**. Do not try to create multiple sites.
 - Use this only when WordPress is genuinely relevant to the participant's build.
-- Keep WordPress work inside this workspace's `wordpress-sandbox/` folder and the generated Docker volumes.
-- Do not use raw `docker`/`docker compose` directly unless James/admin explicitly approves it.
-- Do not create public ports, tunnels, DNS, Cloudflare routes, privileged containers, host mounts, or Docker socket mounts.
-- Stop the sandbox when no longer needed.
+- Do not run `sudo`, raw `docker`, or raw `docker compose` directly.
+- Do not add custom Docker options, images, ports, host mounts, privileged containers, Docker socket mounts, public ports, tunnels, DNS, or Cloudflare routes.
+- Keep WordPress project work inside this workspace's `wordpress-sandbox/` folder and normal project files.
 - If you need persistent public hosting or a non-standard WordPress setup, escalate to James/admin first.
