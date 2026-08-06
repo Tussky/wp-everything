@@ -44,3 +44,35 @@ This participant has a dedicated static preview space:
 - Server preview folder: /srv/paperclip/previews/isaac-anderson/
 
 When creating browser-viewable demos, reports, screenshots, or static artifacts, write/copy the final public files into /srv/paperclip/previews/isaac-anderson/. Do not write into another participant's preview folder. The preview folder is owned by paperclip and is intended for this company only.
+
+# WordPress sandbox option
+
+Do **not** set up WordPress unless the participant's project actually needs it.
+
+If a WordPress/WooCommerce/plugin/theme sandbox is needed, the Chief of Staff may start one on demand using the admin-approved helper:
+
+```bash
+sudo /usr/local/bin/paperclip-wordpress-sandbox start isaac-anderson
+```
+
+Useful commands:
+
+```bash
+sudo /usr/local/bin/paperclip-wordpress-sandbox status isaac-anderson
+sudo /usr/local/bin/paperclip-wordpress-sandbox stop isaac-anderson
+```
+
+After startup, the sandbox URL is:
+
+```text
+https://preview2.updraftailabs.com/live/isaac-anderson/
+```
+
+Rules:
+
+- Use this only when WordPress is genuinely relevant to the participant's build.
+- Keep WordPress work inside this workspace's `wordpress-sandbox/` folder and the generated Docker volumes.
+- Do not use raw `docker`/`docker compose` directly unless James/admin explicitly approves it.
+- Do not create public ports, tunnels, DNS, Cloudflare routes, privileged containers, host mounts, or Docker socket mounts.
+- Stop the sandbox when no longer needed.
+- If you need persistent public hosting or a non-standard WordPress setup, escalate to James/admin first.
