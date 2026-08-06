@@ -76,11 +76,36 @@ https://preview2.updraftailabs.com/live/isaac-anderson/
 
 To check or stop it, write a new request with `"action": "status"` or `"action": "stop"` and the same slug, then read `wordpress-sandbox/result.json` again.
 
+To run WP-CLI inside the sandbox, write a request with `"action": "wp"` and a `wpArgs` array. Example:
+
+```bash
+cat > wordpress-sandbox/request.json <<'JSON'
+{
+  "action": "wp",
+  "slug": "isaac-anderson",
+  "reason": "Run a scoped WP-CLI command inside this WordPress sandbox",
+  "wpArgs": ["--info"]
+}
+JSON
+```
+
+For UpdraftPlus restore automation, use the specific WP-CLI arguments needed by the project, for example:
+
+```json
+{
+  "action": "wp",
+  "slug": "isaac-anderson",
+  "reason": "Run UpdraftPlus restore inside this sandbox",
+  "wpArgs": ["updraftplus", "restore"]
+}
+```
+
 Rules:
 
 - There is **one WordPress sandbox per participant/company**. Do not try to create multiple sites.
 - Use this only when WordPress is genuinely relevant to the participant's build.
 - Do not run `sudo`, raw `docker`, or raw `docker compose` directly.
 - Do not add custom Docker options, images, ports, host mounts, privileged containers, Docker socket mounts, public ports, tunnels, DNS, or Cloudflare routes.
+- The `wp` action only accepts argument arrays; it does not provide shell access. `wp shell`, `wp eval`, and `wp eval-file` are blocked.
 - Keep WordPress project work inside this workspace's `wordpress-sandbox/` folder and normal project files.
 - If you need persistent public hosting or a non-standard WordPress setup, escalate to James/admin first.
