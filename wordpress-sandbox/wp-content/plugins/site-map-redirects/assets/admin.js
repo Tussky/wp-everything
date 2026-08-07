@@ -123,7 +123,7 @@
 	function nodeClass(d) {
 		var cls = 'smr-tree-node ';
 		var data = d.data || {};
-		cls += (data.type === 'container') ? 'container ' : 'leaf ';
+		cls += (data.type === 'container') ? 'container ' : ((data.type === 'redirect_source') ? 'redirect_source ' : 'leaf ');
 		if (data.redirects && data.redirects.length) { cls += 'has-redirect '; }
 		if (state.selectedPath && data.path === state.selectedPath) { cls += 'selected '; }
 		return cls;
@@ -326,6 +326,7 @@
 		items.forEach(function (it) {
 			html += '<span class="smr-legend-item"><span class="smr-legend-swatch" style="background:' + esc(colors[it.k] || colors.other) + '"></span>' + esc(it.label) + '</span>';
 		});
+		html += '<span class="smr-legend-item"><span class="smr-legend-swatch dashed"></span>Redirect source (old URL)</span>';
 		html += '<span class="smr-legend-item"><span class="smr-legend-swatch" style="background:#fff;border:2px solid #d63638"></span>Page with a redirect</span>';
 		html += '<span class="smr-legend-item"><span class="smr-legend-swatch" style="background:#fff;border:1.5px solid #2271b1"></span>Page (no redirect)</span>';
 		html += '<span class="smr-legend-item"><span class="smr-legend-swatch" style="background:#e0e3e7"></span>Container (folder only)</span>';

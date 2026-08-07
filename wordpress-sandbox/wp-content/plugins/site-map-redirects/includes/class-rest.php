@@ -76,14 +76,34 @@ class SMR_REST {
 		$tree      = SMR_Indexer::get_tree( $force );
 		$redirects = SMR_Redirect_Sources::get_all();
 
-		// Annotate tree nodes with matching redirects.
+		// Map redirects by source path. Virtual "redirect source" URLs that
+		// don't correspond to a real page are injected into the tree so the
+		// map visualizes them as nodes — this is the whole point of the overlay.
 		$by_path = array();
+		$to_inject = array();
+		$existing_paths = self::collect_paths( $tree );
 		foreach ( $redirects as $r ) {
-			if ( '*' === $r['source_path'] ) {
+			$sp = $r['source_path'];
+			if ( '*' === $sp ) {
 				continue; // Global canonical rule — handled in legend.
 			}
-			$by_path[ $r['source_path'] ][] = $r;
+			$by_path[ $sp ][] = $r;
+			// Inject only concrete (non-regex) source paths that don't already exist.
+			if ( empty( $r['regex'] ) && ! isset( $existing_paths[ $sp ] ) ) {
+				$to_inject[ $sp ] = $r;
+			}
 		}
+
+		// Inject virtual redirect-source nodes into the tree.
+		if ( $to_inject ) {
+			// Sort by path so parents precede children.
+			$paths = array_keys( $to_inject );
+			sort( $paths );
+			foreach ( $paths as $path ) {
+				self::inject_node( $tree, $path, $to_inject[ $path ] );
+			}
+		}
+
 		self::annotate( $tree, $by_path );
 
 		return rest_ensure_response(
@@ -121,5 +141,70 @@ class SMR_REST {
 			}
 			unset( $child );
 		}
+	}
+
+	/**
+	 * Collect a set of all paths currently in the tree.
+	 */
+	protected static function collect_paths( $node ) {
+		$paths = array();
+		$paths[ isset( $node['path'] ) ? $node['path'] : '/' ] = true;
+		if ( ! empty( $node['children'] ) ) {
+			foreach ( $node['children'] as $child ) {
+				$paths = $paths + self::collect_paths( $child );
+			}
+		}
+		return $paths;
+	}
+
+	/**
+	 * Insert a virtual "redirect source" node at $path, creating intermediate
+	 * container nodes as needed. The node is marked type 'redirect_source' and
+	 * carries no real URL — it exists so the overlay shows where redirects fire from.
+	 */
+	protected static function inject_node( &$tree, $path, $redirect ) {
+		if ( '/' === $path || '' === $path ) {
+			return;
+		}
+		$segments = array_values( array_filter( explode( '/', trim( $path, '/' ) ) ) );
+		if ( empty( $segments ) ) {
+			return;
+		}
+		$parent     = &$tree;
+		$cur_path   = '';
+		$created    = false;
+		for ( $i = 0; $i < count( $segments ); $i++ ) {
+			$seg      = $segments[ $i ];
+			$cur_path .= '/' . $seg;
+			$child_idx = null;
+			if ( ! empty( $parent['children'] ) ) {
+				foreach ( $parent['children'] as $idx => $child ) {
+					if ( isset( $child['path'] ) && $child['path'] === $cur_path ) {
+						$child_idx = $idx;
+						break;
+					}
+				}
+			}
+			if ( null === $child_idx ) {
+				// Create intermediate container, or leaf at final segment.
+				$is_leaf = ( $i === ( count( $segments ) - 1 ) );
+				$new_node = array(
+					'name'     => $seg,
+					'path'     => $cur_path,
+					'slug'     => $seg,
+					'label'    => $is_leaf ? ( '/ ' . $seg ) : $seg,
+					'type'     => $is_leaf ? 'redirect_source' : 'container',
+					'url'      => $is_leaf ? home_url( $cur_path ) : '',
+					'id'       => 0,
+					'editable' => false,
+					'children' => array(),
+				);
+				$parent['children'][] = $new_node;
+				$child_idx = count( $parent['children'] ) - 1;
+				$created   = true;
+			}
+			$parent = &$parent['children'][ $child_idx ];
+		}
+		return $created;
 	}
 }

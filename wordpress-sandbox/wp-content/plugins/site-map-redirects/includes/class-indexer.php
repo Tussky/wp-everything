@@ -281,7 +281,7 @@ class SMR_Indexer {
 	public static function cli_rebuild() {
 		$tree = self::rebuild();
 		$count = self::count_nodes( $tree );
-		if ( function_exists( 'WP_CLI' ) ) {
+		if ( class_exists( 'WP_CLI' ) ) {
 			\WP_CLI::success( "Re-indexed site: {$count} URLs in tree." );
 		}
 		return $tree;

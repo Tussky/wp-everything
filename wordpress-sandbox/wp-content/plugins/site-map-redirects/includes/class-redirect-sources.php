@@ -230,6 +230,12 @@ class SMR_Redirect_Sources {
 			$source_path = '/' . ltrim( $source, '/' );
 		}
 
+		// Strip trailing slash to match the indexer's path normalization
+		// (root stays '/', everything else has no trailing slash).
+		if ( ! $regex && '/' !== $source_path && '' !== $source_path ) {
+			$source_path = '/' . trim( $source_path, '/' );
+		}
+
 		return array(
 			'source_path'   => $source_path,
 			'source_url'    => ( 0 === strpos( $source, 'http' ) ) ? $source : home_url( $source ),
