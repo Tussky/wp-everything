@@ -1,0 +1,128 @@
+/* ============================================================
+ * Admin Search — plugin admin stylesheet (drop-in, no build step)
+ * IA-48 design system implementation. Scope: #wpadminbar, .as-wrap
+ * Load via wp_enqueue_style( 'as-admin', …, array( 'wp-edit' ), '1.0' );
+ * Uses WP core design tokens where possible; fallbacks provided.
+ * ============================================================ */
+
+:root{
+  --as-primary:#2271b1;
+  --as-primary-hover:#135e96;
+  --as-border:#c3c4c7;
+  --as-border-soft:#dcdcde;
+  --as-text:#1d2327;
+  --as-subtle:#50575e;
+  --as-muted:#646970;
+  --as-bg-soft:#f0f0f1;
+  --as-surface:#fff;
+  --as-radius:4px;
+  --as-ring:0 0 0 1.5px #fff, 0 0 0 4px #2271b1;
+  --as-space:4px;
+}
+
+/* ---------- Admin bar quick search ---------- */
+#wp-admin-bar-as-search .ab-sub-wrapper{width:300px}
+#wp-admin-bar-as-search .ab-item{
+  display:flex; align-items:center; gap:6px;
+  background:#3c434a; border:1px solid rgba(255,255,255,.22);
+  border-radius:3px; padding:2px 10px; color:#dcdcde;
+}
+#wp-admin-bar-as-search .ab-item input{
+  border:none; background:transparent; color:#fff; font-size:12px;
+  width:170px; box-shadow:none; outline:none; min-height:0;
+}
+#wp-admin-bar-as-search .ab-item input::placeholder{color:#a7aaad}
+#wp-admin-bar-as-search .ab-item input:focus{box-shadow:none}
+#wp-admin-bar-as-search .kbd{
+  font-size:10px; border:1px solid rgba(255,255,255,.3);
+  border-radius:2px; padding:0 4px; color:#dcdcde;
+}
+
+/* Popover result card (admin bar) */
+.as-popover{
+  position:absolute; right:0; top:40px; width:480px; max-width:92vw;
+  background:var(--as-surface); border:1px solid var(--as-border);
+  border-radius:8px; box-shadow:0 2px 14px rgba(0,0,0,.18); overflow:hidden;
+  z-index:100000;
+}
+.as-popover-head{display:flex; align-items:center; gap:8px; padding:10px 12px; border-bottom:1px solid var(--as-border-soft)}
+.as-popover-head input{flex:1; border:none; outline:none; font-size:14px; background:transparent; min-width:0}
+.as-popover-body{padding:8px; max-height:360px; overflow-y:auto}
+.as-popover-label{font-size:10px; text-transform:uppercase; letter-spacing:.5px; color:var(--as-muted); padding:4px 8px}
+.as-popover-foot{padding:10px 12px; border-top:1px solid var(--as-border-soft); font-size:12px}
+
+/* ---------- Full search page ---------- */
+.as-wrap{max-width:760px; margin:8px 0 24px; color:var(--as-text); font-size:13px; line-height:1.6}
+.as-wrap .as-title{font-size:23px; font-weight:600; margin:0 0 12px}
+
+.as-search{position:relative}
+.as-search-input{
+  width:100%; font-size:16px; padding:12px 44px 12px 38px;
+  border:1px solid var(--as-border); border-radius:4px; background:var(--as-surface);
+  box-shadow:0 1px 1px rgba(0,0,0,.04); color:var(--as-text); line-height:1.5;
+}
+.as-search-input:hover{border-color:#8c8f94}
+.as-search-input:focus{box-shadow:var(--as-ring); border-color:#2271b1}
+.as-search-icon{position:absolute; left:11px; top:50%; transform:translateY(-50%); color:var(--as-muted); pointer-events:none; font-size:16px}
+.as-clear{
+  position:absolute; right:10px; top:50%; transform:translateY(-50%);
+  border:none; background:transparent; color:var(--as-muted); cursor:pointer;
+  font-size:15px; border-radius:3px; padding:2px 5px;
+}
+.as-clear:hover{color:var(--as-text); background:var(--as-bg-soft)}
+.as-hints{margin:4px 0 0; color:var(--as-muted); font-size:11px; display:flex; gap:12px; flex-wrap:wrap}
+.as-live{position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0)}
+
+.as-facets{display:flex; gap:6px; flex-wrap:wrap; margin:12px 0 16px}
+.as-facet{
+  background:var(--as-surface); border:1px solid var(--as-border); color:var(--as-text);
+  font-size:12px; padding:5px 11px; border-radius:16px; cursor:pointer;
+  display:inline-flex; align-items:center; gap:5px;
+}
+.as-facet:hover{border-color:#8c8f94}
+.as-facet[aria-pressed="true"]{background:var(--as-primary); border-color:var(--as-primary); color:#fff}
+.as-facet[aria-pressed="true"] .cnt{color:#fff}
+.as-facet .cnt{color:var(--as-muted); font-size:11px}
+.as-facet:focus-visible{outline:none; box-shadow:var(--as-ring)}
+
+.as-meta{color:var(--as-muted); font-size:12px; margin:0 0 14px}
+.as-meta b{color:var(--as-text)}
+.as-group{margin:0 0 22px}
+.as-group-head{display:flex; align-items:baseline; gap:8px; border-bottom:1px solid var(--as-border-soft); padding-bottom:4px; margin-bottom:8px}
+.as-group-head h2,.as-group-head h3,.as-group-head h4{margin:0; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--as-subtle)}
+.as-group-head .cnt{color:var(--as-muted); font-size:12px}
+.as-list{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px}
+.as-result{
+  display:block; text-decoration:none; color:inherit;
+  border:1px solid var(--as-border); border-radius:4px; padding:9px 12px;
+  background:var(--as-surface); transition:border-color .12s ease, box-shadow .12s ease;
+}
+.as-result:hover,.as-result:focus-visible{border-color:var(--as-primary); box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.as-result:hover .as-result-title,.as-result:focus-visible .as-result-title{color:var(--as-primary)}
+.as-result-top{display:flex; align-items:center; gap:8px}
+.as-result-title{font-size:14px; font-weight:600; color:var(--as-text)}
+.as-badge{font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; border-radius:3px; padding:1px 6px; white-space:nowrap}
+.as-badge.settings{background:#f3eaf7; color:#5b3a70}
+.as-badge.users{background:#e7f2fc; color:#0a4b78}
+.as-badge.products{background:#e7f6e8; color:#0b5b0e}
+.as-badge.content{background:#fcf2e6; color:#8a4b08}
+.as-result-sub{font-size:12px; color:var(--as-subtle); margin-top:2px; display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+.as-result-desc{color:var(--as-muted)}
+.as-result-path{font-family:Menlo,Consolas,monospace; font-size:11px; color:var(--as-muted); background:#f6f7f7; border:1px solid var(--as-border-soft); padding:1px 5px; border-radius:3px; white-space:nowrap}
+.as-result-more{float:right; color:var(--as-primary); font-size:16px; opacity:0; transition:opacity .12s ease}
+.as-result:hover .as-result-more{opacity:1}
+
+.as-empty,.as-noresults{
+  background:var(--as-surface); border:1px solid var(--as-border);
+  border-radius:8px; padding:38px 24px; text-align:center; color:var(--as-subtle);
+}
+.as-empty .big,.as-noresults h3{margin:0 0 6px; font-size:16px; color:var(--as-text)}
+.as-empty p,.as-noresults p{margin:0 0 16px}
+.as-suggest{display:flex; gap:8px; flex-wrap:wrap; justify-content:center}
+.as-notice{background:#f6f7f7; border:1px solid var(--as-border); border-left:4px solid #d63638; border-radius:4px; padding:10px 14px; margin-bottom:14px}
+
+/* Responsive */
+@media (max-width:782px){
+  #wp-admin-bar-as-search .ab-item input{width:60px}
+  .as-popover{right:0; left:50%; transform:translateX(-50%); width:94vw}
+}
