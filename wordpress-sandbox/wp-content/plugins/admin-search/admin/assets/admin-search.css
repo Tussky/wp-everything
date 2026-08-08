@@ -191,8 +191,8 @@
   white-space: nowrap;
 }
 .as-badge.settings { background: #f3eaf7; color: #5b3a70; }
-.as-badge.users    { background: #e7f2fc; color: #0a4b78; }
-.as-badge.products { background: #e7f6e8; color: #0b5b0e; }
+.as-badge.user     { background: #e7f2fc; color: #0a4b78; }
+.as-badge.product  { background: #e7f6e8; color: #0b5b0e; }
 .as-badge.content  { background: #fcf2e6; color: #8a4b08; }
 .as-result-sub {
   font-size: 12px;
