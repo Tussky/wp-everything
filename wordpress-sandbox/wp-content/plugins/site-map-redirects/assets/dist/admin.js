@@ -229,13 +229,14 @@
         treeWrapper.className = "smr-tree";
         treeWrapper.id = "smr-tree";
 
-        var legend = document.createElement("div");
-        legend.className = "smr-legend";
-        legend.innerHTML = this.renderLegend();
+        var legend = this.renderLegend();
 
         var detailPanel = document.createElement("div");
         detailPanel.className = "smr-detail-panel";
-        detailPanel.innerHTML = '<div class="smr-empty-state">Click a node to view details</div>';
+        var empty = document.createElement("div");
+        empty.className = "smr-empty-state";
+        empty.textContent = "Click a node to view details";
+        detailPanel.appendChild(empty);
 
         container.appendChild(treeWrapper);
         container.appendChild(legend);
@@ -246,33 +247,37 @@
     };
 
     SiteMapTree.prototype.renderLegend = function () {
-        return `
-            <h3>${this.config.labels.legend || "Legend"}</h3>
-            <div class="smr-legend-item">
-                <div class="smr-legend-color" style="background: #fff; border: 2px solid #72aee6;"></div>
-                <span>Node</span>
-            </div>
-            <div class="smr-legend-item">
-                <div class="smr-legend-color" style="background: #2271b1; color: white; padding: 2px 6px; font-size: 10px; border-radius: 2px;">301</div>
-                <span>Permanent</span>
-            </div>
-            <div class="smr-legend-item">
-                <div class="smr-legend-color" style="background: #dba624; color: white; padding: 2px 6px; font-size: 10px; border-radius: 2px;">302</div>
-                <span>Temporary</span>
-            </div>
-            <div class="smr-legend-item">
-                <div class="smr-legend-color" style="background: #6f437e; color: white; padding: 2px 6px; font-size: 10px; border-radius: 2px;">307</div>
-                <span>Temporary (POST)</span>
-            </div>
-            <div class="smr-legend-item">
-                <div class="smr-legend-color" style="background: #e04f5f; color: white; padding: 2px 6px; font-size: 10px; border-radius: 2px;">308</div>
-                <span>Permanent (POST)</span>
-            </div>
-            <div class="smr-legend-item">
-                <div class="smr-legend-color" style="background: transparent; border: 2px dashed #dba624;"></div>
-                <span>Redirect Source</span>
-            </div>
-        `;
+        var legend = document.createElement("div");
+        legend.className = "smr-legend";
+
+        var h = document.createElement("h3");
+        h.textContent = this.config.labels.legend || "Legend";
+        legend.appendChild(h);
+
+        var items = [
+            { style: "background: #fff; border: 2px solid #72aee6;", text: "Node" },
+            { style: "background: #2271b1; color: white; padding: 2px 6px; font-size: 10px; border-radius: 2px;", text: "301", label: "Permanent" },
+            { style: "background: #dba624; color: white; padding: 2px 6px; font-size: 10px; border-radius: 2px;", text: "302", label: "Temporary" },
+            { style: "background: #6f437e; color: white; padding: 2px 6px; font-size: 10px; border-radius: 2px;", text: "307", label: "Temporary (POST)" },
+            { style: "background: #e04f5f; color: white; padding: 2px 6px; font-size: 10px; border-radius: 2px;", text: "308", label: "Permanent (POST)" },
+            { style: "background: transparent; border: 2px dashed #dba624;", text: "", label: "Redirect Source" }
+        ];
+
+        items.forEach(function (item) {
+            var row = document.createElement("div");
+            row.className = "smr-legend-item";
+            var swatch = document.createElement("div");
+            swatch.className = "smr-legend-color";
+            swatch.setAttribute("style", item.style);
+            if (item.text) swatch.textContent = item.text;
+            var caption = document.createElement("span");
+            caption.textContent = item.label || item.text;
+            row.appendChild(swatch);
+            row.appendChild(caption);
+            legend.appendChild(row);
+        });
+
+        return legend;
     };
 
     SiteMapTree.prototype.renderD3Tree = function (container, data) {
