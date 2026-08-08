@@ -31,6 +31,8 @@ define( 'SMR_URL', plugin_dir_url( __FILE__ ) );
 define( 'SMR_BASENAME', plugin_basename( __FILE__ ) );
 define( 'SMR_REST_NAMESPACE', 'sitemap-redirects/v1' );
 define( 'SMR_TRANSIENT', 'smr_index_tree' );
+define( 'SMR_TRANSIENT_RULES', 'smr_redirect_rules' );
+define( 'SMR_TRANSIENT_RULES_TTL', HOUR_IN_SECONDS );
 define( 'SMR_TRANSIENT_RULES', 'smr_index_rules' );
 define( 'SMR_TRANSIENT_RULES_TTL', 6 * HOUR_IN_SECONDS );
 
