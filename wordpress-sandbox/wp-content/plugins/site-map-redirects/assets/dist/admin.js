@@ -53,7 +53,7 @@
 
         // Set loading state
         this.reindexButton.disabled = true;
-        this.reindexButton.innerHTML = '<i class="smr-spinner">↻</i> Running...';
+        setButtonContent(this.reindexButton, "running");
 
         fetch(this.baseURL, {
             method: "POST",
@@ -70,9 +70,9 @@
             })
             .then(function (data) {
                 console.log("Re-index completed:", data);
-                _this.reindexButton.innerHTML = '<i>↻</i> Re-indexed';
+                setButtonContent(_this.reindexButton, "done");
                 setTimeout(function () {
-                    _this.reindexButton.innerHTML = '<i>↻</i> ' + _this.config.labels.reindexButton;
+                    setButtonContent(_this.reindexButton, "default");
                     _this.reindexButton.disabled = false;
                 }, 2000);
 
@@ -83,7 +83,7 @@
             })
             .catch(function (error) {
                 console.error("Re-index error:", error);
-                _this.reindexButton.innerHTML = '<i>↻</i> Re-index';
+                setButtonContent(_this.reindexButton, "default");
                 _this.reindexButton.disabled = false;
 
                 // Show error to user
@@ -92,6 +92,25 @@
                 }
             });
     };
+
+    function setButtonContent(button, state) {
+        while (button.firstChild) {
+            button.removeChild(button.firstChild);
+        }
+        var icon = document.createElement("i");
+        icon.textContent = "\u21BB"; // ↻
+        button.appendChild(icon);
+        var label;
+        if (state === "running") {
+            label = "Running\u2026";
+        } else if (state === "done") {
+            label = "Re-indexed";
+        } else {
+            label = (window.SiteMapRedirects && window.SiteMapRedirects.labels && window.SiteMapRedirects.labels.reindexButton)
+                || "Re-index";
+        }
+        button.appendChild(document.createTextNode(" " + label));
+    }
 
     var SiteMapTree = function (config) {
         this.config = config;
@@ -547,7 +566,9 @@
 
         var titleValue = document.createElement("div");
         titleValue.className = "smr-detail-value";
-        titleValue.innerHTML = '<strong>' + (nodeData.title || "Homepage") + '</strong>';
+        var titleStrong = document.createElement("strong");
+        titleStrong.textContent = nodeData.title || nodeData.label || "Homepage";
+        titleValue.appendChild(titleStrong);
 
         var urlLabel = document.createElement("div");
         urlLabel.className = "smr-detail-label";
@@ -556,7 +577,13 @@
         var urlValue = document.createElement("div");
         urlValue.className = "smr-detail-value";
         var urlLink = document.createElement("a");
-        urlLink.href = nodeData.url || "#";
+        // Use setAttribute so the browser will normalize the URL and reject
+        // dangerous schemes like "javascript:" that a malicious server response
+        // (or a future vulnerability in the redirect-discovery code) could slip in.
+        var safeUrl = (typeof nodeData.url === "string" && /^(https?:|mailto:|\/|#)/i.test(nodeData.url))
+            ? nodeData.url
+            : "#";
+        urlLink.setAttribute("href", safeUrl);
         urlLink.textContent = nodeData.url || "#";
         urlValue.appendChild(urlLink);
 
