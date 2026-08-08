@@ -222,7 +222,9 @@
 
     SiteMapTree.prototype.render = function (data) {
         var container = this.container;
-        container.innerHTML = "";
+        while (container.firstChild) {
+            container.removeChild(container.firstChild);
+        }
         container.className = "smr-tree-container";
 
         var treeWrapper = document.createElement("div");
@@ -559,7 +561,11 @@
 
     SiteMapTree.prototype.updateDetailPanel = function (nodeData) {
         var panel = this.detailPanel;
-        panel.innerHTML = "";
+        // Replace innerHTML="" with textContent reset for clarity and to keep
+        // the XSS-safe pattern consistent across this file.
+        while (panel.firstChild) {
+            panel.removeChild(panel.firstChild);
+        }
 
         // Node information section
         var infoSection = document.createElement("div");
