@@ -155,6 +155,10 @@
   flex-direction: column;
   gap: 6px;
 }
+.as-list-item {
+  margin: 0;
+  padding: 0;
+}
 .as-result {
   display: block;
   text-decoration: none;
@@ -321,6 +325,8 @@
 }
 .as-modal-foot a { color: var(--as-primary); text-decoration: none; }
 .as-modal-foot a:hover { text-decoration: underline; }
+.as-modal-foot .as-see-all { font-weight: 600; }
+.as-modal-foot .as-foot-hint { font-family: var(--as-font); }
 .as-modal .as-group-head { top: 0; }
 
 /* ---------- Responsive ---------- */
