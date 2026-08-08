@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<ruleset name="SiteMap-Redirects">
+	<description>WordPress coding standards for the SiteMap Redirects plugin.</description>
+
+	<!-- What to scan. -->
+	<file>./</file>
+
+	<!-- What to exclude from scanning. -->
+	<exclude-pattern>*/vendor/*</exclude-pattern>
+	<exclude-pattern>*/node_modules/*</exclude-pattern>
+	<exclude-pattern>*/dist/*</exclude-pattern>
+	<exclude-pattern>*/.git/*</exclude-pattern>
+
+	<!-- Custom WPCS standard. -->
+	<rule ref="WordPress-Core"/>
+	<rule ref="WordPress-Extra"/>
+	<rule ref="WordPress-Docs"/>
+
+	<!-- WordPress coding standard supports text-domain aliasing. -->
+	<config name="text_domain" value="site-map-redirects"/>
+
+	<!--
+		Excludes scoped to this plugin's naming.
+
+		The plugin directory slug is `site-map-redirects`, so the main
+		plugin file must be `site-map-redirects.php` (WordPress plugin
+		header requirement). The WPCS `InvalidClassFileName` sniff
+		expects every file containing a class to be named
+		`class-{classname}.php`, which is incompatible with the main
+		plugin file and the legacy `class-{short-name}.php` layout this
+		plugin uses for its modules. Suppress that sniff at the project
+		level so we don't have to scatter phpcs:disable comments.
+	-->
+	<rule ref="WordPress.Files.FileName.InvalidClassFileName">
+		<severity>0</severity>
+	</rule>
+
+	<!--
+		WordPress-VIP-Go rules are too aggressive for a public
+		plugin and are not part of WPCS-Core/Extra/Docs.
+	-->
+	<rule ref="WordPress-VIP-Go">
+		<severity>0</severity>
+	</rule>
+
+	<config name="minimum_supported_wp_version" value="6.4"/>
+</ruleset>
