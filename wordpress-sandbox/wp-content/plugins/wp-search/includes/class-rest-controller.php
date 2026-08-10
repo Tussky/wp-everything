@@ -57,7 +57,7 @@ class REST_Controller {
 			self::NAMESPACE,
 			self::ROUTE,
 			array(
-				'methods'             => \WP_REST_Server::READABLE,
+				'methods'             => \WP_REST_Server::READABLE | \WP_REST_Server::CREATABLE,
 				'callback'            => array( $this, 'search_items' ),
 				'permission_callback' => array( $this, 'check_permission' ),
 				'args'                => array(

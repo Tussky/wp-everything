@@ -78,14 +78,14 @@ class Admin {
 
 		wp_enqueue_style(
 			'wp-search-modal',
-			WP_SEARCH_PLUGIN_URL . 'assets/dist/wp-search-modal.css',
+			WP_SEARCH_PLUGIN_URL . 'assets/css/admin.css',
 			array(),
 			WP_SEARCH_VERSION
 		);
 
 		wp_enqueue_script(
 			'wp-search-modal',
-			WP_SEARCH_PLUGIN_URL . 'assets/dist/wp-search-modal.js',
+			WP_SEARCH_PLUGIN_URL . 'assets/js/admin.js',
 			array(),
 			WP_SEARCH_VERSION,
 			true
@@ -102,6 +102,9 @@ class Admin {
 					'loading'     => __( 'Loading…', 'wp-search' ),
 					'empty'       => __( 'No results found.', 'wp-search' ),
 					'error'       => __( 'Something went wrong. Please try again.', 'wp-search' ),
+					'navigate'    => __( 'navigate', 'wp-search' ),
+					'select'      => __( 'select', 'wp-search' ),
+					'shortcutHint'=> __( 'Ctrl K', 'wp-search' ),
 				),
 			)
 		);

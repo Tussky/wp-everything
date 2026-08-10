@@ -1,0 +1,445 @@
+/* WP Search Modal — WordPress Admin Command Palette */
+
+/* --------------------------------------------------------------------------
+ * Backdrop
+ * -------------------------------------------------------------------------- */
+
+.wp-search-modal-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 999999;
+	display: flex;
+	align-items: flex-start;
+	justify-content: center;
+	padding: 10vh 16px 16px;
+	background: rgba(0, 0, 0, 0.45);
+	backdrop-filter: blur(10px);
+	-webkit-backdrop-filter: blur(10px);
+	opacity: 0;
+	visibility: hidden;
+	transition: opacity 0.25s cubic-bezier(0.32, 0.72, 0, 1), visibility 0s linear 0.25s;
+}
+
+.wp-search-modal-overlay.is-open {
+	opacity: 1;
+	visibility: visible;
+	transition: opacity 0.25s cubic-bezier(0.32, 0.72, 0, 1), visibility 0s linear 0s;
+}
+
+/* --------------------------------------------------------------------------
+ * Modal shell
+ * -------------------------------------------------------------------------- */
+
+.wp-search-modal {
+	width: 100%;
+	max-width: 720px;
+	background: #ffffff;
+	border-radius: 12px;
+	box-shadow:
+		0 24px 48px rgba(0, 0, 0, 0.14),
+		0 0 0 1px rgba(0, 0, 0, 0.06);
+	overflow: hidden;
+	transform: translateY(-10px) scale(0.98);
+	transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.25s ease;
+	opacity: 0;
+	display: flex;
+	flex-direction: column;
+}
+
+.wp-search-modal-overlay.is-open .wp-search-modal {
+	transform: translateY(0) scale(1);
+	opacity: 1;
+}
+
+body.wp-search-modal-open {
+	overflow: hidden;
+}
+
+/* --------------------------------------------------------------------------
+ * Input wrap
+ * -------------------------------------------------------------------------- */
+
+.wp-search-modal__input-wrap {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 18px 20px;
+	border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+	flex-shrink: 0;
+}
+
+.wp-search-modal__input-wrap svg {
+	flex-shrink: 0;
+	color: #8c8f94;
+}
+
+.wp-search-modal__input {
+	flex: 1 1 auto;
+	border: 0;
+	outline: 0;
+	background: transparent;
+	font-family: inherit;
+	font-size: 16px;
+	line-height: 1.4;
+	color: #1d2327;
+	padding: 0;
+	margin: 0;
+	min-width: 0;
+}
+
+.wp-search-modal__input::placeholder {
+	color: #a7aaad;
+}
+
+.wp-search-modal__shortcut-hint {
+	flex-shrink: 0;
+	font-size: 11px;
+	font-weight: 500;
+	color: #a7aaad;
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	padding: 2px 6px;
+	line-height: 1;
+	font-family: inherit;
+}
+
+/* --------------------------------------------------------------------------
+ * Spinner
+ * -------------------------------------------------------------------------- */
+
+.wp-search-modal__spinner {
+	display: none;
+	width: 18px;
+	height: 18px;
+	border: 2px solid #e0e0e0;
+	border-top-color: var(--wp-admin-theme-color, #2271b1);
+	border-radius: 50%;
+	animation: wp-search-spin 0.7s linear infinite;
+	flex-shrink: 0;
+}
+
+.wp-search-modal__spinner.is-visible {
+	display: block;
+}
+
+@keyframes wp-search-spin {
+	to { transform: rotate(360deg); }
+}
+
+/* --------------------------------------------------------------------------
+ * Results list
+ * -------------------------------------------------------------------------- */
+
+.wp-search-modal__results {
+	max-height: 56vh;
+	overflow-y: auto;
+	padding: 6px 0;
+	scrollbar-width: thin;
+	scrollbar-color: rgba(0,0,0,0.15) transparent;
+}
+
+.wp-search-modal__results::-webkit-scrollbar {
+	width: 6px;
+}
+
+.wp-search-modal__results::-webkit-scrollbar-thumb {
+	background: rgba(0, 0, 0, 0.15);
+	border-radius: 3px;
+}
+
+/* --------------------------------------------------------------------------
+ * Group label
+ * -------------------------------------------------------------------------- */
+
+.wp-search-modal__group-label {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 8px 20px 4px;
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: #8c8f94;
+	user-select: none;
+}
+
+.wp-search-modal__group-label .dashicons {
+	width: 14px;
+	height: 14px;
+	font-size: 14px;
+	color: #8c8f94;
+}
+
+/* --------------------------------------------------------------------------
+ * Result item
+ * -------------------------------------------------------------------------- */
+
+.wp-search-modal__item {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 10px 16px;
+	margin: 0 8px;
+	border-radius: 8px;
+	cursor: pointer;
+	text-decoration: none;
+	color: inherit;
+	outline: none;
+	transition: background-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.wp-search-modal__item:hover {
+	background: rgba(0, 0, 0, 0.04);
+}
+
+.wp-search-modal__item.is-selected {
+	background: var(--wp-admin-theme-color, #2271b1);
+	color: #ffffff;
+}
+
+.wp-search-modal__item.is-selected .wp-search-modal__item-meta,
+.wp-search-modal__item.is-selected .wp-search-modal__item-source {
+	color: rgba(255, 255, 255, 0.9);
+}
+
+.wp-search-modal__item:focus-visible {
+	box-shadow: inset 0 0 0 2px var(--wp-admin-theme-color, #2271b1);
+}
+
+.wp-search-modal__item.is-selected:focus-visible {
+	box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.6);
+}
+
+.wp-search-modal__item-body {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.wp-search-modal__item-title {
+	font-size: 14px;
+	font-weight: 500;
+	line-height: 1.3;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.wp-search-modal__item-title mark {
+	background: transparent;
+	font-weight: 600;
+	text-decoration: underline;
+	text-decoration-color: var(--wp-admin-theme-color, #2271b1);
+	text-underline-offset: 2px;
+}
+
+.wp-search-modal__item.is-selected .wp-search-modal__item-title mark {
+	color: #ffffff;
+	text-decoration-color: rgba(255, 255, 255, 0.8);
+}
+
+.wp-search-modal__item-meta {
+	font-size: 12px;
+	color: #8c8f94;
+	margin-top: 2px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+/* --------------------------------------------------------------------------
+ * Source type badges
+ * -------------------------------------------------------------------------- */
+
+.wp-search-modal__item-source {
+	flex-shrink: 0;
+	font-size: 10px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	border-radius: 4px;
+	padding: 3px 8px;
+	line-height: 1;
+	white-space: nowrap;
+}
+
+/* Posts — blue */
+.wp-search-badge--posts {
+	color: #0969da;
+	background: #ddf4ff;
+	border: 1px solid #b6e3ff;
+}
+
+/* Users — green */
+.wp-search-badge--users {
+	color: #1a7f37;
+	background: #dafbe1;
+	border: 1px solid #aceebb;
+}
+
+/* Plugins — purple */
+.wp-search-badge--plugins {
+	color: #662d91;
+	background: #f3e8ff;
+	border: 1px solid #d8b4fe;
+}
+
+/* Options — orange */
+.wp-search-badge--options {
+	color: #9a3412;
+	background: #ffedd5;
+	border: 1px solid #fed7aa;
+}
+
+/* Menus — gray */
+.wp-search-badge--menus {
+	color: #4b5563;
+	background: #f3f4f6;
+	border: 1px solid #d1d5db;
+}
+
+/* Products — teal */
+.wp-search-badge--products {
+	color: #0f766e;
+	background: #ccfbf1;
+	border: 1px solid #99f6e4;
+}
+
+/* Selected state overrides */
+.wp-search-modal__item.is-selected .wp-search-modal__item-source {
+	background: rgba(255, 255, 255, 0.2);
+	border-color: rgba(255, 255, 255, 0.3);
+	color: #ffffff;
+}
+
+/* --------------------------------------------------------------------------
+ * Empty / Error states
+ * -------------------------------------------------------------------------- */
+
+.wp-search-modal__empty,
+.wp-search-modal__error {
+	padding: 32px 20px;
+	text-align: center;
+	font-size: 14px;
+	color: #8c8f94;
+}
+
+.wp-search-modal__error {
+	color: #b32d2e;
+}
+
+/* --------------------------------------------------------------------------
+ * Footer
+ * -------------------------------------------------------------------------- */
+
+.wp-search-modal__footer {
+	display: flex;
+	gap: 16px;
+	padding: 10px 20px;
+	border-top: 1px solid rgba(0, 0, 0, 0.06);
+	font-size: 11px;
+	color: #a7aaad;
+	flex-shrink: 0;
+	user-select: none;
+}
+
+.wp-search-modal__footer span {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.wp-search-modal__footer kbd {
+	font-family: inherit;
+	font-size: 10px;
+	font-weight: 600;
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	padding: 1px 5px;
+	color: #6c757d;
+}
+
+.wp-search-modal__footer-shortcut {
+	margin-left: auto;
+}
+
+/* --------------------------------------------------------------------------
+ * Tools page trigger
+ * -------------------------------------------------------------------------- */
+
+.wp-search-tools-trigger {
+	display: inline-flex;
+	align-items: center;
+	gap: 12px;
+	width: 100%;
+	max-width: 520px;
+	padding: 12px 16px;
+	background: #ffffff;
+	border: 1px solid #c5c5c5;
+	border-radius: 8px;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+	cursor: pointer;
+	color: #3c434a;
+	margin-bottom: 16px;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.wp-search-tools-trigger:hover,
+.wp-search-tools-trigger:focus {
+	border-color: #8c8f94;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+	outline: none;
+}
+
+.wp-search-tools-trigger__icon {
+	color: #8c8f94;
+	flex-shrink: 0;
+}
+
+.wp-search-tools-trigger__text {
+	flex: 1 1 auto;
+	font-size: 14px;
+	color: #8c8f94;
+}
+
+.wp-search-tools-trigger__shortcut {
+	display: inline-flex;
+	gap: 4px;
+	flex-shrink: 0;
+}
+
+.wp-search-tools-trigger__shortcut kbd {
+	font-family: inherit;
+	font-size: 11px;
+	font-weight: 500;
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	padding: 2px 6px;
+	color: #6c757d;
+	line-height: 1;
+}
+
+/* --------------------------------------------------------------------------
+ * Responsive
+ * -------------------------------------------------------------------------- */
+
+@media (max-width: 782px) {
+	.wp-search-modal-overlay {
+		padding: 0;
+		align-items: stretch;
+	}
+
+	.wp-search-modal {
+		max-width: 100%;
+		border-radius: 0;
+		min-height: 100dvh;
+	}
+
+	.wp-search-modal__results {
+		max-height: none;
+		flex: 1 1 auto;
+	}
+}
