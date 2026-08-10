@@ -57,7 +57,7 @@ class REST_Controller {
 			self::NAMESPACE,
 			self::ROUTE,
 			array(
-				'methods'             => \WP_REST_Server::READABLE | \WP_REST_Server::CREATABLE,
+				'methods'             => array( 'GET', 'POST' ),
 				'callback'            => array( $this, 'search_items' ),
 				'permission_callback' => array( $this, 'check_permission' ),
 				'args'                => array(
@@ -160,7 +160,7 @@ class REST_Controller {
 	 * @since 1.0.0
 	 * @return array<Indexer>
 	 */
-	private function get_indexers(): array {
+	protected function get_indexers(): array {
 		return array(
 			new Settings_Indexer(),
 			new Users_Indexer(),

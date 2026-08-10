@@ -1,0 +1,23 @@
+{
+	"name": "paperclip/wp-search",
+	"description": "Unit-test scaffolding for the wp->search WordPress plugin",
+	"type": "wordpress-plugin",
+	"license": "GPL-2.0-or-later",
+	"require-dev": {
+		"phpunit/phpunit": "^9.6",
+		"brain/monkey": "^2.6",
+		"mockery/mockery": "^1.6"
+	},
+	"autoload-dev": {
+		"classmap": [
+			"tests/unit/"
+		]
+	},
+	"config": {
+		"platform": {
+			"php": "8.0"
+		},
+		"sort-packages": true,
+		"allow-plugins": {}
+	}
+}

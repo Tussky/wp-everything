@@ -49,6 +49,10 @@ scratch/tmp/
 # PHPCS vendor — installed by the sandbox runner, regenerable
 /wordpress-sandbox/wp-content/phpcs-vendor/
 
+# wp-search plugin test tooling
+/wordpress-sandbox/wp-content/plugins/wp-search/vendor/
+/wordpress-sandbox/wp-content/plugins/wp-search/.phpunit.cache
+
 # Keep our plugins and the SMR-side mu-plugin scaffold tracked
 !/wordpress-sandbox/wp-content/plugins/site-map-redirects/
 !/wordpress-sandbox/wp-content/mu-plugins/

@@ -1,0 +1,197 @@
+<?php
+/**
+ * REST Controller unit tests.
+ *
+ * @package WP_Search
+ */
+
+namespace WP_Search\Tests;
+
+use Brain\Monkey\Functions;
+use Mockery;
+use WP_Search\REST_Controller;
+use WP_Search\Settings_Indexer;
+
+/**
+ * Tests for REST_Controller.
+ */
+class REST_Controller_Tests extends Test_Case {
+
+	/**
+	 * Helper to create a controller with all indexers stubbed.
+	 *
+	 * @param array<mixed> $stubs Source-keyed arrays returned by indexers.
+	 * @return REST_Controller
+	 */
+	private function controller_with_stubbed_indexers( array $stubs = array() ): REST_Controller {
+		Functions\when( 'current_user_can' )->justReturn( true );
+		Functions\when( 'get_transient' )->alias(
+			function ( $key ) use ( $stubs ) {
+				return $stubs[ $key ] ?? array();
+			}
+		);
+		Functions\when( 'sanitize_text_field' )->returnArg();
+		Functions\when( 'rest_ensure_response' )->alias(
+			function ( $data ) {
+				return $data;
+			}
+		);
+
+		$controller = Mockery::mock( REST_Controller::class )->makePartial();
+		$controller->shouldAllowMockingProtectedMethods();
+
+		$indexers = array();
+		foreach ( $stubs as $source => $records ) {
+			$indexer = Mockery::mock( Settings_Indexer::class ); // Base type only used for shape.
+			$indexer->shouldReceive( 'search' )->andReturn( $records );
+			$indexer->shouldReceive( 'get_source' )->andReturn( $source );
+			$indexers[] = $indexer;
+		}
+
+		$controller->shouldReceive( 'get_indexers' )->andReturn( $indexers );
+		return $controller;
+	}
+
+	/**
+	 * The search route should be registered with the expected args.
+	 *
+	 * @return void
+	 */
+	public function test_register_routes(): void {
+		$registered = null;
+
+		Functions\when( 'register_rest_route' )->alias(
+			function ( $namespace, $route, $args ) use ( &$registered ) {
+				$registered = compact( 'namespace', 'route', 'args' );
+			}
+		);
+
+		$controller = new REST_Controller();
+		$controller->register_routes();
+
+		$this->assertNotNull( $registered );
+		$this->assertSame( REST_Controller::NAMESPACE, $registered['namespace'] );
+		$this->assertSame( REST_Controller::ROUTE, $registered['route'] );
+		$this->assertArrayHasKey( 'methods', $registered['args'] );
+		$this->assertArrayHasKey( 'callback', $registered['args'] );
+		$this->assertArrayHasKey( 'permission_callback', $registered['args'] );
+		$this->assertArrayHasKey( 'args', $registered['args'] );
+		$this->assertArrayHasKey( 'q', $registered['args']['args'] );
+	}
+
+	/**
+	 * Empty / short queries should be accepted.
+	 *
+	 * @return void
+	 */
+	public function test_validate_query_accepts_valid_query(): void {
+		Functions\when( '__' )->returnArg();
+
+		$controller = new REST_Controller();
+		$request  = Mockery::mock( 'WP_REST_Request' );
+
+		$this->assertTrue( $controller->validate_query( 'admin', $request, 'q' ) );
+	}
+
+	/**
+	 * Validation should fail when the parameter is not 'q'.
+	 *
+	 * @return void
+	 */
+	public function test_validate_query_rejects_wrong_param(): void {
+		Functions\when( '__' )->returnArg();
+
+		$controller = new REST_Controller();
+		$request  = Mockery::mock( 'WP_REST_Request' );
+		$result   = $controller->validate_query( 'admin', $request, 'foo' );
+
+		$this->assertInstanceOf( '\WP_Error', $result );
+		$this->assertSame( 'wp_search_invalid_param', $result->get_error_code() );
+	}
+
+	/**
+	 * Queries over 200 characters should be rejected.
+	 *
+	 * @return void
+	 */
+	public function test_validate_query_rejects_long_query(): void {
+		Functions\when( '__' )->returnArg();
+
+		$controller = new REST_Controller();
+		$request  = Mockery::mock( 'WP_REST_Request' );
+		$result   = $controller->validate_query( str_repeat( 'a', 201 ), $request, 'q' );
+
+		$this->assertInstanceOf( '\WP_Error', $result );
+		$this->assertSame( 'wp_search_query_too_long', $result->get_error_code() );
+	}
+
+	/**
+	 * Administrators are allowed to search.
+	 *
+	 * @return void
+	 */
+	public function test_check_permission_allows_admin(): void {
+		Functions\when( 'current_user_can' )->justReturn( true );
+
+		$controller = new REST_Controller();
+		$this->assertTrue( $controller->check_permission() );
+	}
+
+	/**
+	 * Non-admin users should receive a 403 error.
+	 *
+	 * @return void
+	 */
+	public function test_check_permission_denies_non_admin(): void {
+		Functions\when( 'current_user_can' )->justReturn( false );
+		Functions\when( '__' )->returnArg();
+
+		$controller = new REST_Controller();
+		$result = $controller->check_permission();
+
+		$this->assertInstanceOf( '\WP_Error', $result );
+		$this->assertSame( 'wp_search_forbidden', $result->get_error_code() );
+		$this->assertSame( 403, $result->get_error_data()['status'] );
+	}
+
+	/**
+	 * Search results should be merged from all indexers.
+	 *
+	 * @return void
+	 */
+	public function test_search_items_merges_indexer_results(): void {
+		$request = Mockery::mock( 'WP_REST_Request' );
+		$request->shouldReceive( 'get_param' )->with( 'q' )->andReturn( 'admin' );
+
+		$stubs = array(
+			'settings' => array( array( 'title' => 'Settings', 'url' => '/', 'source' => 'settings' ) ),
+			'users'    => array( array( 'title' => 'Admin User', 'email' => 'a@b', 'source' => 'users' ) ),
+		);
+
+		$controller = $this->controller_with_stubbed_indexers( $stubs );
+		$response   = $controller->search_items( $request );
+
+		$this->assertSame( 'admin', $response['query'] );
+		$this->assertSame( 2, $response['count'] );
+		$this->assertCount( 2, $response['results'] );
+		$this->assertSame( 'settings', $response['results'][0]['source'] );
+		$this->assertSame( 'users', $response['results'][1]['source'] );
+	}
+
+	/**
+	 * Search should return an empty result set when no indexers return data.
+	 *
+	 * @return void
+	 */
+	public function test_search_items_returns_empty_when_no_matches(): void {
+		$request = Mockery::mock( 'WP_REST_Request' );
+		$request->shouldReceive( 'get_param' )->with( 'q' )->andReturn( 'xyz' );
+
+		$controller = $this->controller_with_stubbed_indexers( array() );
+		$response   = $controller->search_items( $request );
+
+		$this->assertSame( 'xyz', $response['query'] );
+		$this->assertSame( 0, $response['count'] );
+		$this->assertCount( 0, $response['results'] );
+	}
+}
