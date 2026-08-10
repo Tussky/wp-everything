@@ -6,9 +6,20 @@ Plugin-level changes for SiteMap Redirects live in
 
 ## 2026-08-10
 
+- IA-110: Board halt order — all SiteMap Redirects plugin work paused and
+  removed from workspace. Pivot to wp→search per board directive.
+- IA-111: SMR cleanup complete — removed `site-map-redirects/` directory,
+  `smr-phpcs-runner.php` mu-plugin, and all SMR log files. All 10 SMR
+  issues cancelled. Final stray file committed in follow-up.
+- IA-119: wp→search production plan created — 7-phase implementation plan
+  (foundation → search engine → UI/UX → testing → docs → security → deploy).
+- IA-121: Phase 1 kicked off — Marko Ebner scaffolding plugin structure,
+  settings indexer, and REST endpoint.
+- IA-122: Phase 3 (UI) planned — Nina Wallner + Jana Richter on search
+  modal and keyboard shortcut (blocked by IA-121/Phase 1+2).
 - IA-95: Admin Search plugin (third-party, by Andrew Stichbury) removed from
   workspace per board directive. Redirected team to SiteMap Redirects
-  production in [IA-96](/IA/issues/IA-96).
+  production in [IA-96](/IA/issues/IA-96). (Superseded by IA-110 halt.)
 
 ## 2026-08-08
 
