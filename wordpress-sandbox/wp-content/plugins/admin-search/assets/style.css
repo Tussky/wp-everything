@@ -1,0 +1,1117 @@
+:root {
+	--as-color-background: #2c3338;
+	--as-color-background-rgb: 44 51 56;
+	--as-color-focus: #2271b1;
+	--as-color-focus-text: #72aee6;
+	--as-color-primary: #ffffff;
+	--as-color-primary-rgb: 255 255 255;
+	--as-opacity-secondary: 66%;
+	--as-transition-speed: 300ms;
+}
+
+@media (min-width: 783px) {
+
+	:root {
+		--as-color-background: #1d2327;
+		--as-color-background-rgb: 29 35 39;
+	}
+
+}
+
+
+#wpadminbar > #wp-toolbar > #wp-admin-bar-root-default #wp-admin-bar-admin-search-toggle .ab-icon {
+	margin-right: 0;
+}
+
+@media (min-width: 261px) and (max-width: 782px) {
+
+	#wpadminbar li#wp-admin-bar-admin-search-toggle {
+		display: block;
+	}
+
+}
+
+#wpadminbar #wp-admin-bar-admin-search-toggle .ab-icon::before {
+	content: "\f179";
+	top: 3px;
+}
+
+@media (min-width: 783px) {
+
+	#wpadminbar #wp-admin-bar-admin-search-toggle .ab-icon::before {
+		top: 2px;
+	}
+
+}
+
+
+
+#admin-search-modal {
+	position: fixed;
+	top: var(--wp-admin--admin-bar--height);
+	left: 0;
+	width: 100%;
+	height: 100%;
+	box-sizing: border-box;
+	-webkit-font-smoothing: antialiased;
+	z-index: 160001;
+}
+
+#admin-search-modal-background {
+	position: absolute;
+	width: 100%;
+	height: 100%;
+}
+
+
+#admin-search-container {
+	position: relative;
+	width: 100%;
+	overflow: hidden;
+	background: var(--as-color-background);
+	color: var(--as-color-primary);
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+	font-size: 14px;
+	line-height: 1.4em;
+}
+
+@media (max-width: 782px) {
+
+	#admin-search-container {
+		top: auto !important;
+		left: auto !important;
+	}
+
+}
+
+@media (min-width: 783px) {
+
+	#admin-search-container {
+		position: absolute;
+		max-width: 673px;
+		border-radius: 32px;
+		box-shadow: 0 8px 16px rgb(0 0 0 / 40%), inset 0 0 0 1px var(--as-color-background), inset 0 0 0 2px rgb(var(--as-color-primary-rgb) / 12%);
+	}
+
+}
+
+
+#admin-search-input-field-container {
+	display: flex;
+	flex-direction: row-reverse;
+	align-items: center;
+	gap: 12px;
+	margin: 0 0 0 10px;
+}
+
+@media (min-width: 783px) {
+
+	#admin-search-input-field-container {
+		margin: 0 0 0 24px;
+	}
+
+}
+
+
+#admin-search-input {
+	position: relative;
+	overflow: hidden;
+}
+
+#admin-search-input::after {
+	content: '';
+	position: absolute;
+	bottom: 0;
+	left: 10px;
+	right: 10px;
+	height: 1px;
+	background: rgb(var(--as-color-primary-rgb) / 12%);
+}
+
+@media (min-width: 783px) {
+
+	#admin-search-input::after {
+		left: 24px;
+		right: 24px;
+		visibility: hidden;
+	}
+
+}
+
+#admin-search-modal.admin-search-results-open #admin-search-input::after {
+	visibility: visible;
+}
+
+
+#admin-search-input-field {
+	position: relative;
+	flex-grow: 1;
+	height: 52px;
+	margin: 0;
+	background: none;
+	border: 0;
+	border-radius: 0;
+	color: var(--as-color-primary);
+	font-size: 1.25em;
+	line-height: 52px;
+	-webkit-font-smoothing: antialiased;
+	font-weight: 500;
+	box-shadow: none;
+	box-sizing: border-box;
+	outline: none;
+}
+
+@media (min-width: 783px) {
+
+	#admin-search-input-field {
+		height: 28px;
+		margin: 18px 0;
+		font-size: 1.7142857143em;
+		line-height: 28px;
+	}
+
+}
+
+#admin-search-input-field-placeholder {
+	position: absolute;
+	color: rgb(var(--as-color-primary-rgb) / var(--as-opacity-secondary));
+	transition: opacity 50ms ease;
+	pointer-events: none;
+}
+
+#admin-search-modal.admin-search-input-is-focussed #admin-search-input-field-placeholder {
+	opacity: 0.333;
+}
+
+#admin-search-modal.admin-search-has-value #admin-search-input-field-placeholder {
+	opacity: 0;
+}
+
+#admin-search-input-field-value-container {
+	display: flex;
+}
+
+#admin-search-input-field-value {
+	min-width: 12px;
+	cursor: text;
+}
+
+#admin-search-input-field-autocomplete {
+	opacity: 0;
+	cursor: default;
+	transition: opacity 50ms ease;
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
+#admin-search-input-field-autocomplete-suggestion {
+	color: rgb(var(--as-color-primary-rgb) / var(--as-opacity-secondary));
+	white-space: break-spaces;
+}
+
+#admin-search-input-field-autocomplete-hint {
+	padding: 0 4px;
+	color: rgb(var(--as-color-primary-rgb) / var(--as-opacity-secondary));
+	font-size: 12px;
+	line-height: 16px;
+	border: 1px solid;
+	border-radius: 2px;
+
+	display: none;
+}
+
+
+#admin-search-input-submit {
+	width: 24px; 
+	height: 24px;
+	padding: 0;
+	background: none;
+	border: 0;
+	box-shadow: none;
+	box-sizing: border-box;
+	color: var(--as-color-primary);
+	outline: none;
+	display: none;
+}
+
+@media (min-width: 782px) {
+
+	#admin-search-input-submit {
+		display: block;
+	}
+
+}
+
+#admin-search-input-submit svg {
+	content: '';
+	width: 24px;
+	height: 24px;
+	display: block;
+	fill: rgb(var(--as-color-primary-rgb) / var(--as-opacity-secondary));
+}
+
+#admin-search-input-submit:focus svg {
+	fill: var(--as-color-focus-text);
+}
+
+
+#admin-search-clear-button {
+	position: absolute;
+	top: 50%;
+	right: 10px;
+	width: 24px;
+	height: 24px;
+	-moz-transform: translateY(-50%);
+	-webkit-transform: translateY(-50%);
+	transform: translateY(-50%);
+}
+
+@media (min-width: 783px) {
+
+	#admin-search-clear-button {
+		right: 24px;
+	}
+
+}
+
+#admin-search-clear-button button {
+	display: block;
+	margin: 0;
+	padding: 0;
+	background: none;
+	border: 0;
+	opacity: 0;
+	cursor: pointer;
+	-moz-transition: opacity 100ms ease;
+	-webkit-transition: opacity 100ms ease;
+	transition: opacity 100ms ease;
+}
+
+body.mobile #admin-search-modal.admin-search-has-value:not(.admin-search-results-loading) #admin-search-clear-button button,
+#admin-search-modal.admin-search-has-value:not(.admin-search-results-loading) #admin-search-input:hover #admin-search-clear-button button,
+#admin-search-modal.admin-search-has-value:not(.admin-search-results-loading) #admin-search-clear-button button:focus {
+	opacity: 1;
+}
+
+#admin-search-clear-button svg {
+	width: 24px;
+	height: 24px;
+	display: block;
+	fill: rgb(var(--as-color-primary-rgb) / var(--as-opacity-secondary));
+}
+
+
+#admin-search-status-indicator {
+	position: absolute;
+	top: 50%;
+	right: 10px;
+	width: 24px;
+	height: 24px;
+	-moz-transform: translateY(-50%);
+	-webkit-transform: translateY(-50%);
+	transform: translateY(-50%);
+	opacity: 0;
+	transition: opacity 100ms ease;
+}
+
+@media (min-width: 783px) {
+
+	#admin-search-status-indicator {
+		right: 24px;
+	}
+
+}
+
+#admin-search-modal.admin-search-results-loading #admin-search-status-indicator {
+	opacity: 1;
+}
+
+#admin-search-status-indicator svg {
+	width: 24px;
+	height: 24px;
+	display: block;
+	fill: rgb(var(--as-color-primary-rgb) / var(--as-opacity-secondary));
+}
+
+
+#admin-search-results-container {
+	position: relative;
+	height: -webkit-calc(100vh - 98px);
+	height: calc(100vh - 98px);
+	overflow: hidden;
+	-webkit-transition: height var(--as-transition-speed) ease;
+	transition: height var(--as-transition-speed) ease;
+	border-radius: 0 0 32px 32px;
+}
+
+@media (min-width: 783px) {
+
+	#admin-search-results-container {
+		height: 0;
+	}
+
+	#admin-search-modal.admin-search-results-open #admin-search-results-container {
+		height: 352px;
+		height: -webkit-calc(60vh - 98px);
+		height: calc(60vh - 98px);
+	}
+
+}
+
+#admin-search-modal.admin-search-results-loading #admin-search-results-container {
+	overflow-y: hidden;
+}
+
+
+#admin-search-result-preview {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	display: none;
+	overflow: hidden;
+	z-index: 1;
+}
+
+@media (max-width: 782px) {
+
+	#admin-search-result-preview {
+		display: none !important;
+	}
+
+}
+
+#admin-search-result-preview-content {
+	position: absolute;
+	top: 0;
+	right: 0;
+	width: 66.66%;
+	height: 100%;
+	background: #fff;
+	border-radius: 8px 0 0 8px;
+	overflow: hidden;
+	-moz-transform: translateX(100%);
+	-webkit-transform: translateX(100%);
+	transform: translateX(100%);
+	-webkit-transition: var(--as-transition-speed) ease;
+	transition: var(--as-transition-speed) ease;
+	-webkit-transition-property: transform, box-shadow;
+	transition-property: transform, box-shadow;
+}
+
+#admin-search-result-preview-loading-indicator {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	-moz-transform: translate(-50%, -50%);
+	-webkit-transform: translate(-50%, -50%);
+	transform: translate(-50%, -50%);
+	visibility: hidden;
+}
+
+.admin-search-result-preview-loading #admin-search-result-preview-loading-indicator {
+	visibility: visible;
+}
+
+#admin-search-result-preview iframe {
+	width: 200%;
+	height: 200%;
+	display: block;
+	border: 0;
+	-moz-transform: scale(0.5) translate(-50%, -50%);
+	-webkit-transform: scale(0.5) translate(-50%, -50%);
+	transform: scale(0.5) translate(-50%, -50%);
+}
+
+#admin-search-result-preview.admin-search-result-preview-loading iframe {
+	visibility: hidden;
+}
+
+#admin-search-result-preview a {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+}
+
+#admin-search-result-preview-close {
+	position: absolute;
+	top: 16px;
+	left: 16px;
+}
+
+#admin-search-result-preview-close button {
+	display: block;
+	width: 32px;
+	height: 32px;
+	margin: 0;
+	padding: 4px;
+	background: var(--as-color-primary);
+	border: 0;
+	border-radius: 4px;
+	cursor: pointer;
+	-moz-transform: scale(0);
+	-webkit-transform: scale(0);
+	transform: scale(0);
+	-moz-transition: transform var(--as-transition-speed) ease;
+	-webkit-transition: transform var(--as-transition-speed) ease;
+	transition: transform var(--as-transition-speed) ease;
+}
+
+#admin-search-result-preview-close svg {
+	display: block;
+	fill: var(--as-color-background);
+}
+
+
+#admin-search-results {
+	height: 100%;
+	overflow: hidden;
+	overflow-y: auto;
+	overflow-y: overlay;
+}
+
+#admin-search-results::-webkit-scrollbar {
+	width: 12px;
+}
+
+#admin-search-modal.admin-search-results-loading #admin-search-results::-webkit-scrollbar {
+	display: none;
+}
+ 
+#admin-search-results::-webkit-scrollbar-thumb {
+	border-left: 4px solid rgb(var(--as-color-primary-rgb) / var(--as-opacity-secondary));
+}
+
+#admin-search-results-message {
+	height: 100%;
+	display: flex;
+	opacity: 0;
+	transition: opacity var(--as-transition-speed) ease;
+}
+
+#admin-search-results-message-content {
+	margin: auto;
+	color: rgb(var(--as-color-primary-rgb) / var(--as-opacity-secondary));
+	font-size: 1em;
+	font-weight: 500;
+}
+
+.admin-search-result-group {
+	margin: 0 0 16px;
+}
+
+.admin-search-result-group-title {
+	position: sticky;
+	top: 0;
+	margin: 0 2px -20px;
+	padding: 0 8px 16px;
+	background: linear-gradient(rgb(var(--as-color-background-rgb) / 100%), rgb(var(--as-color-background-rgb) / 0%));
+	box-sizing: border-box;
+	color: rgb(var(--as-color-primary-rgb) / var(--as-opacity-secondary));
+	font-weight: 600;
+	line-height: 32px;
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	user-select: none;
+	z-index: 1;
+	pointer-events: none;
+}
+
+.admin-search-result-group-title::before {
+	content: '';
+	position: absolute;
+	top: -1px;
+	left: 10px;
+	right: 10px;
+	height: 1px;
+	background: rgb(var(--as-color-primary-rgb) / 12%);
+}
+
+@media (min-width: 783px) {
+
+	.admin-search-result-group-title {
+		line-height: 48px;
+		padding: 0 22px 24px;
+		margin-bottom: -32px;
+	}
+
+	.admin-search-result-group-title::before {
+		left: 24px;
+		right: 24px;
+	}
+
+}
+
+.admin-search-result-group-shortcut {
+	position: absolute;
+	top: 0;
+	right: 0;
+}
+
+.admin-search-result-group-shortcut a {
+	display: block;
+	padding: 16px 10px;
+	box-shadow: none;
+	color: var(--as-color-focus-text);
+	text-decoration: none;
+	opacity: 0;
+	outline: none;
+	transition: 100ms ease;
+	transition-property: color, opacity;
+}
+
+@media (min-width: 783px) {
+
+	.admin-search-result-group-shortcut a {
+		padding: 16px 24px 10px;
+	}
+
+}
+
+.admin-search-result-group:hover .admin-search-result-group-shortcut a,
+.admin-search-result-group-shortcut a:focus {
+	opacity: 1;
+}
+
+.admin-search-result-group-shortcut a::after {
+	content: '\2192';
+	display: block;
+	font-weight: bold;
+	vertical-align: -1px;
+}
+
+.admin-search-results {
+	
+}
+
+.admin-search-result-group.admin-search-attachment-post-type .admin-search-results {
+	padding: 0 2px 0;
+	overflow: hidden;
+}
+
+@media (min-width: 783px) {
+
+	.admin-search-result-group.admin-search-attachment-post-type .admin-search-results {
+		padding: 0 16px 0;
+	}
+
+}
+
+.admin-search-result {
+	position: relative;
+}
+
+@-moz-keyframes asload {
+	0% {
+		transform: translateX(-100%);
+		opacity: 0;
+	}
+	50% {
+		opacity: 1;
+	}
+	100% {
+		transform: translateX(100%);
+		opacity: 0;
+	}
+}
+
+@-webkit-keyframes asload {
+	0% {
+		transform: translateX(-100%);
+		opacity: 0;
+	}
+	50% {
+		opacity: 1;
+	}
+	100% {
+		transform: translateX(100%);
+		opacity: 0;
+	}
+}
+
+@keyframes asload {
+	0% {
+		transform: translateX(-100%);
+		opacity: 0;
+	}
+	50% {
+		opacity: 1;
+	}
+	100% {
+		transform: translateX(100%);
+		opacity: 0;
+	}
+}
+
+.admin-search-result.admin-search-loading-preview::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background: linear-gradient(90deg, rgb(var(--as-color-primary-rgb) / 0%), rgb(var(--as-color-primary-rgb) / 20%), rgb(var(--as-color-primary-rgb) / 0%));
+	-moz-animation: asload 2s infinite;
+	-webkit-animation: asload 2s infinite;
+	animation: asload 2s infinite;
+}
+
+.admin-search-result.admin-search-result-has-link {
+	cursor: pointer;
+}
+
+.admin-search-result-group.admin-search-attachment-post-type .admin-search-result {
+	width: 33.3333%;
+	margin: 0;
+	padding: 8px;
+	float: left;
+	box-sizing: border-box;
+}
+
+@media (min-width: 551px) {
+
+	.admin-search-result-group.admin-search-attachment-post-type .admin-search-result {
+		width: 25%;
+	}
+
+}
+
+.admin-search-result-focussed {
+	background-color: rgb(var(--as-color-primary-rgb) / 6%);
+}
+
+.admin-search-result-selected {
+	background-color: var(--as-color-focus);
+}
+
+.admin-search-result {
+	padding: 10px 10px;
+	color: var(--as-color-primary);
+	transition: none;
+}
+
+@media (min-width: 783px) {
+
+	.admin-search-result {
+		margin: 0 8px;
+		padding: 10px 16px;
+		border-radius: 24px;
+	}
+
+}
+
+.admin-search-result a {
+	color: inherit;
+	text-decoration: none;
+	box-shadow: none;
+}
+
+.admin-search-result-group.admin-search-attachment-post-type .admin-search-result a {
+	border-radius: 2px;
+}
+
+.admin-search-result-group.admin-search-attachment-post-type .admin-search-result a:focus {
+	box-shadow: 0 0 0 1px var(--as-color-focus), 0 0 2px 1px var(--as-color-focus);
+}
+
+.admin-search-result-container {
+	position: relative;
+	display: flex;
+	min-height: 24px;
+	align-items: center;
+	gap: 12px;
+}
+
+.admin-search-result-title {
+	flex-grow: 1;
+	overflow: hidden;
+	font-weight: 500;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+.admin-search-result-title a {
+	display: block;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+.admin-search-result-title a[target="_blank"]::after {
+	content: '\2192';
+	display: inline-block;
+	font-weight: bold;
+	vertical-align: -1px;
+	-moz-transform: rotate(-45deg);
+	-webkit-transform: rotate(-45deg);
+	transform: rotate(-45deg);
+}
+
+.admin-search-result-title-highlight {
+	text-decoration: underline;
+	text-decoration-color: rgb(var(--as-color-primary-rgb) / var(--as-opacity-secondary));
+}
+
+.admin-search-result-status {
+	color: rgb(var(--as-color-primary-rgb) / var(--as-opacity-secondary));
+	font-weight: normal;
+}
+
+.admin-search-result-date {
+	color: rgb(var(--as-color-primary-rgb) / var(--as-opacity-secondary));
+	font-weight: 500;
+	text-align: right;
+	white-space: nowrap;
+	display: none;
+}
+
+@media (min-width: 783px) {
+
+	.admin-search-result-focussed .admin-search-result-date {
+		display: block;
+	}
+
+}
+
+.admin-search-result-preview-toggle {
+	display: none;
+}
+
+@media (min-width: 783px) {
+
+	.admin-search-previews-enabled .admin-search-result-focussed .admin-search-result-preview-toggle {
+		display: block;
+	}
+
+}
+
+.admin-search-result-preview-toggle button {
+	display: block;
+	margin: 0;
+	padding: 0;
+	background: none;
+	border: 0;
+	color: var(--as-color-focus-text);
+	cursor: pointer;
+}
+
+.admin-search-result-preview-toggle button svg {
+	display: block;
+	fill: currentColor;
+}
+
+.admin-search-result-preview {
+	position: relative;
+}
+
+.admin-search-result-preview::after {
+	content: '';
+	display: block;
+	padding: 100% 0 0;
+}
+
+.admin-search-result-preview img {
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	display: block;
+	border-radius: 8px;
+	object-fit: cover;
+	object-position: center;
+}
+
+.admin-search-result-file {
+	position: relative;
+}
+
+.admin-search-result-file::after {
+	content: '';
+	display: block;
+	padding: 100% 0 0;
+}
+
+.admin-search-result-file-container {
+	position: absolute;
+	top: 50%;
+	width: 100%;
+	-moz-transform: translatey(-50%);
+	-webkit-transform: translatey(-50%);
+	transform: translatey(-50%);
+}
+
+.admin-search-result-file-icon {
+	width: 44px;
+	height: 44px;
+	display: block;
+	margin: 0 auto 8px;
+	background: var(--as-color-primary);
+	padding: 6px;
+	box-sizing: border-box;
+	object-fit: contain;
+	object-position: center;
+	border-radius: 2px;
+}
+
+.admin-search-result-file-title {
+	text-align: center;
+}
+
+.admin-search-result-group-pagination {
+	margin: 8px 10px 10px;
+}
+
+@media (min-width: 783px) {
+
+	.admin-search-result-group-pagination {
+		margin: 10px 24px 10px;
+	}
+
+}
+
+.admin-search-result-group-pagination button {
+	position: relative;
+	height: 24px;
+	display: block;
+	-webkit-appearance: none;
+	appearance: none;
+	background: none;
+	border: 0;
+	color: var(--as-color-focus-text);
+	font: inherit;
+	font-weight: 500;
+	margin: 0;
+	padding: 0;
+	cursor: pointer;
+}
+
+.admin-search-result-group-pagination button span {
+	line-height: 24px;
+	transition: opacity 100ms ease;
+}
+
+.admin-search-result-group-pagination.admin-search-results-loading button span {
+	opacity: 0;
+}
+
+.admin-search-result-group-pagination-status-indicator {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 24px;
+	height: 24px;
+	opacity: 0;
+	transition: opacity 100ms ease;
+}
+
+.admin-search-result-group-pagination.admin-search-results-loading .admin-search-result-group-pagination-status-indicator {
+	opacity: 1;
+}
+
+.admin-search-result-group-pagination-status-indicator svg {
+	width: 24px;
+	height: 24px;
+	display: block;
+	fill: rgb(var(--as-color-primary-rgb) / var(--as-opacity-secondary));
+}
+
+
+/* ── Settings page: post-type toggle list ───────────────────────────────────
+   All rules are scoped to the .settings_page_admin-search body class that
+   WordPress adds to the settings page, so they cannot bleed into the search
+   UI or any other admin screen.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* Each post type is a white card with a 4px gap below it */
+.settings_page_admin-search .as-pt-item {
+	background: #fff;
+	border-radius: 4px;
+	padding: 0 14px;
+	margin-bottom: 4px;
+}
+
+/* Visually-hidden checkboxes — still focusable and still submit their value */
+.settings_page_admin-search .as-pt-toggle,
+.settings_page_admin-search .as-field-toggle {
+	position: absolute;
+	opacity: 0;
+	width: 1px;
+	height: 1px;
+	pointer-events: none;
+}
+
+/* Post-type row label: icon + name flex-grow + toggle track */
+.settings_page_admin-search .as-pt-label {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	cursor: pointer;
+	padding: 16px 0;
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+/* Post type icon — dashicon or image sprite */
+.settings_page_admin-search .as-pt-icon {
+	width: 20px;
+	height: 20px;
+	font-size: 20px;
+	line-height: 1;
+	flex-shrink: 0;
+	color: #3c434a;
+}
+
+.settings_page_admin-search .as-pt-icon-img {
+	background-size: 20px 20px;
+	background-repeat: no-repeat;
+	background-position: center;
+}
+
+.settings_page_admin-search .as-pt-name {
+	flex: 1;
+	font-size: 13px;
+	font-weight: 500;
+	color: #3c434a;
+}
+
+/* Shared toggle track (used by both post-type and field toggles) */
+.settings_page_admin-search .as-pt-track,
+.settings_page_admin-search .as-field-track {
+	width: 36px;
+	height: 20px;
+	background: #c3c4c7;
+	border-radius: 10px;
+	position: relative;
+	flex-shrink: 0;
+	transition: background .15s ease;
+}
+
+.settings_page_admin-search .as-pt-track::after,
+.settings_page_admin-search .as-field-track::after {
+	content: '';
+	position: absolute;
+	width: 16px;
+	height: 16px;
+	background: #fff;
+	border-radius: 50%;
+	top: 2px;
+	left: 2px;
+	transition: left .15s ease;
+	box-shadow: 0 1px 2px rgba(0,0,0,.25);
+}
+
+/* Checked — post-type toggle */
+.settings_page_admin-search .as-pt-toggle:checked + .as-pt-label .as-pt-track {
+	background: #2271b1;
+}
+
+.settings_page_admin-search .as-pt-toggle:checked + .as-pt-label .as-pt-track::after {
+	left: 18px;
+}
+
+/* Focus ring — post-type toggle */
+.settings_page_admin-search .as-pt-toggle:focus-visible + .as-pt-label .as-pt-track {
+	outline: 2px solid #2271b1;
+	outline-offset: 2px;
+}
+
+/* Fields panel — collapsed by default, revealed by the :checked ~ combinator.
+   A subtle top rule separates it from the post-type header row. */
+.settings_page_admin-search .as-pt-fields {
+	display: none;
+	padding: 0 0 12px;
+	margin: -8px 0 0;
+}
+
+.settings_page_admin-search .as-pt-toggle:checked ~ .as-pt-fields {
+	display: block;
+}
+
+/* Field list and items */
+.settings_page_admin-search .as-field-list {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+/* Layout: [name flex-grow] [hint] [toggle track] */
+.settings_page_admin-search .as-field-item {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	cursor: pointer;
+	padding: 5px 4px;
+	border-radius: 4px;
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+.settings_page_admin-search .as-field-item:hover {
+	background: rgba(0,0,0,.04);
+}
+
+/* Field toggle — slightly smaller than the post-type toggle.
+   NOTE: HTML order is input → name → hint → track; ~ (general sibling) is
+   used instead of + because name and hint sit between input and track. */
+.settings_page_admin-search .as-field-track {
+	width: 28px;
+	height: 16px;
+	border-radius: 8px;
+}
+
+.settings_page_admin-search .as-field-track::after {
+	width: 12px;
+	height: 12px;
+	top: 2px;
+	left: 2px;
+}
+
+.settings_page_admin-search .as-field-toggle:checked ~ .as-field-track {
+	background: #2271b1;
+}
+
+.settings_page_admin-search .as-field-toggle:checked ~ .as-field-track::after {
+	left: 14px;
+}
+
+.settings_page_admin-search .as-field-toggle:focus-visible ~ .as-field-track {
+	outline: 2px solid #2271b1;
+	outline-offset: 2px;
+}
+
+/* Field text */
+.settings_page_admin-search .as-field-name {
+	flex: 1;
+	font-size: 13px;
+	color: #1d2327;
+}
+
+.settings_page_admin-search .as-field-hint {
+	font-size: 12px;
+	color: #787c82;
+}
+
+/* Taxonomy section label — subtle divider between meta fields and taxonomy toggles */
+.settings_page_admin-search .as-field-section-label {
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: .04em;
+	color: #646970;
+	padding: 16px 4px 8px;
+    margin-top: 8px;
+	border-top: 1px solid #f0f0f1;
+}
+
+.settings_page_admin-search .as-field-hint-meta {
+	font-family: Consolas, Monaco, monospace;
+	font-size: 11px;
+}
+
+.settings_page_admin-search .as-field-note {
+	margin: 2px 4px 0;
+}
+

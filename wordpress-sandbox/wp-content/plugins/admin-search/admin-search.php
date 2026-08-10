@@ -1,84 +1,82 @@
 <?php
-/**
- * Plugin Name:       Admin Search
- * Plugin URI:        https://preview2.updraftailabs.com/live/isaac-anderson/
- * Description:       Unified keyboard-driven admin search across plugin settings pages, admin users, WooCommerce products, and posts/pages. Read-only MVP for the Admin Search hackathon.
- * Version:           0.1.0
- * Author:            Isaac Anderson — AI Labs Cohort #2
- * Author URI:        https://preview2.updraftailabs.com/isaac-anderson/
- * License:           GPL-2.0-or-later
- * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain:       admin-search
- * Requires at least: 6.4
- * Requires PHP:      7.4
- *
- * @package AdminSearch
+/*
+ *	Plugin Name:		Admin Search
+ *	Plugin URL:			http://www.andrewstichbury.com
+ *	Description:		Admin Search adds a simple, easy-to-use interface to your WordPress admin site that gives you and your WordPress admin users the ability to search across multiple post types, taxonomies and more in one place.
+ *	Version:			1.5.0
+ *	Requires at least:	4.9.2
+ *	Requires PHP:		5.2
+ *	Author:				Andrew Stichbury
+ *	Author URI:			http://www.andrewstichbury.com
+ *	Text Domain:		admin-search
+ *	License:			GPL v2 or later
+ *	License URI:		https://www.gnu.org/licenses/gpl-2.0.html
  */
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit; // No direct access.
-}
 
-define( 'AS_VERSION', '0.1.0' );
-define( 'AS_FILE', __FILE__ );
-define( 'AS_DIR', plugin_dir_path( __FILE__ ) );
-define( 'AS_URL', plugin_dir_url( __FILE__ ) );
-define( 'AS_BASENAME', plugin_basename( __FILE__ ) );
-define( 'AS_REST_NAMESPACE', 'admin-search/v1' );
-define( 'AS_OPTION_INDEX', 'as_index_v1' );
-define( 'AS_OPTION_STATS', 'as_stats_v1' );
-define( 'AS_OPTION_QUERIES', 'as_last_queries_v1' );
-define( 'AS_OPTION_FIXTURE_QUERY', 'as_fixture_query' );
 
-require_once AS_DIR . 'includes/class-indexer.php';
-require_once AS_DIR . 'includes/class-query.php';
-require_once AS_DIR . 'includes/class-rest.php';
-require_once AS_DIR . 'admin/class-admin-page.php';
-
-/**
- * Main plugin bootstrap (single instance).
+/*
+ *	Abort if this file is accessed directly
  */
-final class Admin_Search {
-
-	private static $instance = null;
-
-	public static function instance() {
-		if ( null === self::$instance ) {
-			self::$instance = new self();
-		}
-		return self::$instance;
-	}
-
-	private function __construct() {
-		AS_Indexer::init();
-		AS_Query::init();
-		AS_REST::init();
-		AS_Admin_Page::init();
-
-		if ( defined( 'WP_CLI' ) && WP_CLI ) {
-			WP_CLI::add_command( 'admin-search reindex', array( 'AS_Indexer', 'cli_rebuild' ) );
-		}
-	}
-
-	public static function activate() {
-		// Pre-build an index so the first search call is non-empty.
-		AS_Indexer::rebuild();
-	}
-
-	public static function deactivate() {
-		// Keep the option around on deactivation; only the uninstall hook wipes it.
-	}
-
-	public static function uninstall() {
-		delete_option( AS_OPTION_INDEX );
-		delete_option( AS_OPTION_STATS );
-		delete_option( AS_OPTION_QUERIES );
-		delete_option( AS_OPTION_FIXTURE_QUERY );
-	}
+if ( ! defined( 'WPINC' ) ) {
+	die;
 }
 
-register_activation_hook( __FILE__, array( 'Admin_Search', 'activate' ) );
-register_deactivation_hook( __FILE__, array( 'Admin_Search', 'deactivate' ) );
-register_uninstall_hook( __FILE__, array( 'Admin_Search', 'uninstall' ) );
 
-add_action( 'plugins_loaded', array( 'Admin_Search', 'instance' ) );
+
+define( 'ADMIN_SEARCH_VERSION', '1.5.0' );
+define( 'ADMIN_SEARCH_VERSION_INT', 150 );
+
+
+
+require_once plugin_dir_path( __FILE__ ) . 'settings.php';
+require_once plugin_dir_path( __FILE__ ) . 'ui.php';
+require_once plugin_dir_path( __FILE__ ) . 'ajax.php';
+require_once plugin_dir_path( __FILE__ ) . 'woocommerce.php';
+
+
+
+function admin_search_setup() {
+
+	// Only perform setup if not the current version
+	if ( get_option( 'admin_search_version' ) != ADMIN_SEARCH_VERSION_INT ) {
+		update_option( 'admin_search_version', ADMIN_SEARCH_VERSION_INT );
+
+		global $wpdb;
+
+		$table_name = $wpdb -> prefix . 'admin_search__searches';
+
+		// Only create `searches` table if it doesn't exist
+		if ( $wpdb -> get_var( $wpdb -> prepare( "SHOW TABLES LIKE %s", $table_name ) ) != $table_name ) {
+			$charset_collate = $wpdb -> get_charset_collate();
+
+			$sql = "CREATE TABLE $table_name (
+				id mediumint(9) NOT NULL AUTO_INCREMENT,
+				query tinytext NOT NULL,
+				results mediumint(9) NOT NULL,
+				occurrences mediumint(9) DEFAULT 1 NOT NULL,
+				PRIMARY KEY (id)
+			) $charset_collate;";
+
+			require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+			dbDelta( $sql );
+		}
+	}
+
+}
+
+add_action( 'admin_init', 'admin_search_setup' );
+
+register_activation_hook( __FILE__, 'admin_search_setup' );
+
+
+
+function admin_search_add_query_vars_filter( $vars ) {
+	$vars[] = 'admin_search_preview';
+
+	return $vars;
+}
+
+add_filter( 'query_vars', 'admin_search_add_query_vars_filter' );
+
