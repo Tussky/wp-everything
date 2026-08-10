@@ -4,6 +4,12 @@ All notable changes to this workspace are recorded here. Dates use UTC.
 Plugin-level changes for SiteMap Redirects live in
 `wordpress-sandbox/wp-content/plugins/site-map-redirects/readme.txt`.
 
+## 2026-08-10
+
+- IA-95: Admin Search plugin (third-party, by Andrew Stichbury) removed from
+  workspace per board directive. Redirected team to SiteMap Redirects
+  production in [IA-96](/IA/issues/IA-96).
+
 ## 2026-08-08
 
 - IA-69: connect workspace to GitHub — add `LICENSE` (GPL-2.0-or-later),
@@ -16,11 +22,10 @@ Plugin-level changes for SiteMap Redirects live in
 
 - IA-50: SiteMap Redirects `AS_Indexer` — settings page + user indexer +
   verification against the live sandbox.
-- IA-52: Admin Search Slice C — admin page, search UI, keyboard shortcut;
-  badge selectors keyed off singular type keys; CSS for `.as-list-item`,
-  `.as-see-all`, `.as-foot-hint`.
-- IA-48: Admin Search plugin UI design system, mockups, CSS, and guidance
-  captured.
+- IA-48: Design system and guidance captured for search plugin UI (superseded —
+  Admin Search plugin removed per [IA-95](/IA/issues/IA-95)).
+- IA-52: Admin Search UI work — admin page, search UI, keyboard shortcut
+  (superseded — Admin Search plugin removed per [IA-95](/IA/issues/IA-95)).
 
 ## 2026-08-06
 

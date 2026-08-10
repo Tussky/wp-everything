@@ -51,5 +51,4 @@ scratch/tmp/
 
 # Keep our plugins and the SMR-side mu-plugin scaffold tracked
 !/wordpress-sandbox/wp-content/plugins/site-map-redirects/
-!/wordpress-sandbox/wp-content/plugins/admin-search/
 !/wordpress-sandbox/wp-content/mu-plugins/

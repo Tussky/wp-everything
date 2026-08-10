@@ -3,15 +3,13 @@
 This repository tracks the active development workspace for Isaac Anderson's
 AI Labs Cohort #2 hackathon project.
 
-The headline deliverable is the **SiteMap Redirects** WordPress plugin, with a
-sibling **Admin Search** plugin that grew out of the same cohort. Both live
-under `wordpress-sandbox/wp-content/plugins/` so they can be exercised against
+The headline deliverable is the **SiteMap Redirects** WordPress plugin. It lives
+under `wordpress-sandbox/wp-content/plugins/` so it can be exercised against
 the cohort's shared WordPress sandbox without separate hosting.
 
 ## What's in here
 
 - `wordpress-sandbox/wp-content/plugins/site-map-redirects/` — main plugin
-- `wordpress-sandbox/wp-content/plugins/admin-search/` — companion admin bar search
 - `wordpress-sandbox/wp-content/mu-plugins/smr-phpcs-runner.php` — sandbox-side
   WP-CLI helper used to run PHPCS against the plugin from inside the sandbox
 - `AGENTS.md` — workspace agent instructions for the cohort
@@ -41,13 +39,6 @@ The plugin is documented in detail under
 
 Install locally by copying the plugin folder to a WordPress install and
 activating it; the indexer rebuilds on activation.
-
-## Admin Search plugin
-
-The Admin Search plugin is the cohort Slice C work tracked in
-[IA-48](/IA/issues/IA-48) and [IA-52](/IA/issues/IA-52). It is a separate
-plugin living in the same workspace so both can be exercised against the same
-sandbox.
 
 ## Development notes
 
