@@ -34,6 +34,15 @@ class SMR_Logger {
 	const PREFIX = '[smr]';
 
 	/**
+	 * Context keys that are known to be safe to include in user-visible
+	 * last-error entries (everything else is stripped before the admin UI
+	 * renders the message).
+	 *
+	 * @var string[]
+	 */
+	const SAFE_CONTEXT_KEYS = array( 'urls', 'key', 'type' );
+
+	/**
 	 * Write an "info" level message.
 	 *
 	 * @param string $message Human-readable description.
@@ -96,7 +105,7 @@ class SMR_Logger {
 			'time'    => current_time( 'mysql' ),
 			'code'    => $code,
 			'message' => $message,
-			'context' => $context,
+			'context' => self::sanitize_context( $context ),
 		);
 
 		$history = get_option( 'smr_last_error', array() );
@@ -109,6 +118,40 @@ class SMR_Logger {
 
 		// Keep a single "current" pointer for the admin UI / REST payload.
 		update_option( 'smr_current_error', $entry, false );
+	}
+
+	/**
+	 * Strip context entries to a safe allow-list before they are stored and
+	 * surfaced through the admin UI / REST payload.
+	 *
+	 * `message`, `exception`, `code`, `file`, and `line` may leak internal
+	 * paths or stack frames and are dropped from the user-facing view. The
+	 * full context still goes to the PHP error log via write().
+	 *
+	 * @param mixed $context Raw context (may not be an array).
+	 * @return array Sanitized context.
+	 */
+	protected static function sanitize_context( $context ) {
+		if ( ! is_array( $context ) ) {
+			return array();
+		}
+		$safe = array();
+		foreach ( self::SAFE_CONTEXT_KEYS as $key ) {
+			if ( isset( $context[ $key ] ) ) {
+				$value = $context[ $key ];
+				if ( is_scalar( $value ) || ( is_object( $value ) && method_exists( $value, '__toString' ) ) ) {
+					$safe[ $key ] = (string) $value;
+				} elseif ( is_array( $value ) ) {
+					$safe[ $key ] = array_map(
+						static function ( $v ) {
+							return is_scalar( $v ) ? (string) $v : '';
+						},
+						$value
+					);
+				}
+			}
+		}
+		return $safe;
 	}
 
 	/**
