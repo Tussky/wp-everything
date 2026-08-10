@@ -42,7 +42,7 @@ class Posts_Indexer extends Indexer {
 	 * @since 1.0.0
 	 * @var int
 	 */
-	const RESULTS_LIMIT = 10;
+	const RESULTS_LIMIT = 20;
 
 	/**
 	 * Post types included in this index.
@@ -102,17 +102,23 @@ class Posts_Indexer extends Indexer {
 
 		$results = array();
 		foreach ( $q->posts as $post_id ) {
+			if ( ! current_user_can( 'edit_post', $post_id ) ) {
+				continue;
+			}
+
 			$post = get_post( $post_id );
 			if ( ! $post ) {
 				continue;
 			}
+
+			$edit_url = get_edit_post_link( $post );
 
 			$results[] = $this->normalize_record(
 				array(
 					'title'       => get_the_title( $post ),
 					'description' => get_the_excerpt( $post ),
 					'keywords'    => '',
-					'url'         => get_permalink( $post ),
+					'url'         => $edit_url ? $edit_url : get_permalink( $post ),
 					'type'        => $post->post_type,
 				)
 			);
