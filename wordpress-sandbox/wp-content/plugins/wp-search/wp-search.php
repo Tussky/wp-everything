@@ -45,6 +45,9 @@ if ( ! defined( 'WP_SEARCH_PLUGIN_URL' ) ) {
 function wp_search_load(): void {
 	require_once WP_SEARCH_PLUGIN_DIR . 'includes/class-indexer.php';
 	require_once WP_SEARCH_PLUGIN_DIR . 'includes/class-settings-indexer.php';
+	require_once WP_SEARCH_PLUGIN_DIR . 'includes/class-users-indexer.php';
+	require_once WP_SEARCH_PLUGIN_DIR . 'includes/class-plugins-indexer.php';
+	require_once WP_SEARCH_PLUGIN_DIR . 'includes/class-menus-indexer.php';
 	require_once WP_SEARCH_PLUGIN_DIR . 'includes/class-posts-indexer.php';
 	require_once WP_SEARCH_PLUGIN_DIR . 'includes/class-products-indexer.php';
 	require_once WP_SEARCH_PLUGIN_DIR . 'includes/class-rest-controller.php';
@@ -52,6 +55,9 @@ function wp_search_load(): void {
 
 	$wp_search_indexer = new WP_Search\Settings_Indexer();
 	$wp_search_indexer->init();
+
+	$wp_search_menus = new WP_Search\Menus_Indexer();
+	$wp_search_menus->init();
 
 	$wp_search_rest = new WP_Search\REST_Controller();
 	$wp_search_rest->init();

@@ -163,6 +163,9 @@ class REST_Controller {
 	private function get_indexers(): array {
 		return array(
 			new Settings_Indexer(),
+			new Users_Indexer(),
+			new Plugins_Indexer(),
+			new Menus_Indexer(),
 			new Posts_Indexer(),
 			new Products_Indexer(),
 		);

@@ -68,10 +68,10 @@ class Admin {
 	 * Enqueue modal assets on all admin pages.
 	 *
 	 * @since 1.0.0
-	 * @param string $hook_suffix The current admin page.
+	 * @param string $_hook_suffix The current admin page.
 	 * @return void
 	 */
-	public function enqueue_assets( string $hook_suffix ): void {
+	public function enqueue_assets( string $_hook_suffix ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
 		if ( ! is_admin() ) {
 			return;
 		}
@@ -121,11 +121,11 @@ class Admin {
 
 		$wp_admin_bar->add_node(
 			array(
-				'id'    => 'wp-search',
+				'id'     => 'wp-search',
 				'parent' => 'top-secondary',
-				'title' => '<span class="ab-icon dashicons dashicons-search"></span><span class="ab-label">' . esc_html__( 'Search', 'wp-search' ) . '</span>',
-				'href'  => '#',
-				'meta'  => array(
+				'title'  => '<span class="ab-icon dashicons dashicons-search"></span><span class="ab-label">' . esc_html__( 'Search', 'wp-search' ) . '</span>',
+				'href'   => '#',
+				'meta'   => array(
 					'title' => esc_attr__( 'Open search (Ctrl+K)', 'wp-search' ),
 					'class' => 'wp-search-admin-bar-node',
 				),
