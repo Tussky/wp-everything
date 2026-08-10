@@ -135,6 +135,9 @@ class SMR_Redirect_Resolver {
 	 * @return array[]
 	 */
 	protected static function do_discover() {
-		return array();
+		if ( ! class_exists( 'SMR_Redirect_Sources' ) ) {
+			require_once SMR_DIR . 'includes/class-redirect-sources.php';
+		}
+		return SMR_Redirect_Sources::get_all();
 	}
 }

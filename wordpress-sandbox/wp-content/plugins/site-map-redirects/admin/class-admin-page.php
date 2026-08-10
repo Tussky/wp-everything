@@ -75,12 +75,23 @@ class SMR_Admin_Page {
 		}
 
 		// Enqueue D3.js from CDN for tree rendering.
+		// SRI hash protects against CDN compromise / DNS hijack: the browser will
+		// refuse to execute the script if the bytes don't match the hash below.
+		// When bumping d3.js, regenerate the hash with:
+		//   curl -sL https://d3js.org/d3.v7.min.js | openssl dgst -sha384 -binary | openssl base64 -A
 		wp_enqueue_script(
 			'smr-d3',
 			'https://d3js.org/d3.v7.min.js',
 			array(),
-			'7.0.0',
-			true
+			'7.8.5',
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+				'sri'       => array(
+					'algorithm' => 'sha384',
+					'hash'      => 'CjloA8y00+1SDAUkjs099PVfnY2KmDC2BZnws9kh8D/lX1s46w6EPhpXdqMfjK6i',
+				),
+			)
 		);
 
 		wp_enqueue_style(
@@ -235,6 +246,10 @@ class SMR_Admin_Page {
 			SMR_Indexer::ERR_EMPTY        => __( 'No pages were found while building the site map.', 'site-map-redirects' ),
 			SMR_Redirect_Resolver::ERR_DISCOVERY => __( 'Redirect rules could not be loaded. The site map will still render.', 'site-map-redirects' ),
 			SMR_Redirect_Resolver::ERR_CACHE     => __( 'Could not cache redirect rules. The plugin will keep working without a redirect cache.', 'site-map-redirects' ),
+			SMR_Redirect_Sources::ERR_HTACCESS         => __( 'Could not read the .htaccess file. Apache-level redirects were skipped; the rest of the site map is unaffected.', 'site-map-redirects' ),
+			SMR_Redirect_Sources::ERR_REDIRECTION_PLUGIN => __( 'Could not read the Redirection plugin\'s rule table. The site map is still built, just without Redirection plugin rules.', 'site-map-redirects' ),
+			SMR_Redirect_Sources::ERR_CORE             => __( 'WordPress core redirects could not be loaded. Plugin and .htaccess redirects will still appear in the site map.', 'site-map-redirects' ),
+			SMR_Redirect_Sources::ERR_RECORD           => __( 'One rule was skipped because it could not be read. The rest of the redirect rules are still shown.', 'site-map-redirects' ),
 			SMR_REST::ERR_FORBIDDEN       => __( 'You do not have permission to do that.', 'site-map-redirects' ),
 			SMR_REST::ERR_INTERNAL        => __( 'The site map could not be assembled. Please try again, or reindex.', 'site-map-redirects' ),
 			SMR_REST::ERR_PERM_CHECK      => __( 'Could not verify your permissions. Please reload the page.', 'site-map-redirects' ),
