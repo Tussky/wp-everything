@@ -43,27 +43,54 @@ if ( ! defined( 'WP_SEARCH_PLUGIN_URL' ) ) {
  * @return void
  */
 function wp_search_load(): void {
-	require_once WP_SEARCH_PLUGIN_DIR . 'includes/class-indexer.php';
-	require_once WP_SEARCH_PLUGIN_DIR . 'includes/class-settings-indexer.php';
-	require_once WP_SEARCH_PLUGIN_DIR . 'includes/class-users-indexer.php';
-	require_once WP_SEARCH_PLUGIN_DIR . 'includes/class-plugins-indexer.php';
-	require_once WP_SEARCH_PLUGIN_DIR . 'includes/class-menus-indexer.php';
-	require_once WP_SEARCH_PLUGIN_DIR . 'includes/class-posts-indexer.php';
-	require_once WP_SEARCH_PLUGIN_DIR . 'includes/class-products-indexer.php';
-	require_once WP_SEARCH_PLUGIN_DIR . 'includes/class-rest-controller.php';
-	require_once WP_SEARCH_PLUGIN_DIR . 'includes/class-admin.php';
-
-	$wp_search_indexer = new WP_Search\Settings_Indexer();
-	$wp_search_indexer->init();
-
-	$wp_search_menus = new WP_Search\Menus_Indexer();
-	$wp_search_menus->init();
-
-	$wp_search_rest = new WP_Search\REST_Controller();
-	$wp_search_rest->init();
-
-	$wp_search_admin = new WP_Search\Admin();
-	$wp_search_admin->init();
+	$files = array(
+		'class-indexer.php',
+		'class-settings-indexer.php',
+		'class-users-indexer.php',
+		'class-plugins-indexer.php',
+		'class-menus-indexer.php',
+		'class-posts-indexer.php',
+		'class-products-indexer.php',
+		'class-rest-controller.php',
+		'class-admin.php',
+	);
+	
+	foreach ( $files as $file ) {
+		$path = WP_SEARCH_PLUGIN_DIR . 'includes/' . $file;
+		if ( ! file_exists( $path ) ) {
+			error_log( 'wp-search: Missing file ' . $file );
+			continue;
+		}
+		require_once $path;
+	}
+	
+	try {
+		$wp_search_indexer = new WP_Search\Settings_Indexer();
+		$wp_search_indexer->init();
+	} catch ( \Throwable $e ) {
+		error_log( 'wp-search: Settings_Indexer init failed: ' . $e->getMessage() );
+	}
+	
+	try {
+		$wp_search_menus = new WP_Search\Menus_Indexer();
+		$wp_search_menus->init();
+	} catch ( \Throwable $e ) {
+		error_log( 'wp-search: Menus_Indexer init failed: ' . $e->getMessage() );
+	}
+	
+	try {
+		$wp_search_rest = new WP_Search\REST_Controller();
+		$wp_search_rest->init();
+	} catch ( \Throwable $e ) {
+		error_log( 'wp-search: REST_Controller init failed: ' . $e->getMessage() );
+	}
+	
+	try {
+		$wp_search_admin = new WP_Search\Admin();
+		$wp_search_admin->init();
+	} catch ( \Throwable $e ) {
+		error_log( 'wp-search: Admin init failed: ' . $e->getMessage() );
+	}
 }
 add_action( 'plugins_loaded', 'wp_search_load' );
 
@@ -74,25 +101,57 @@ add_action( 'plugins_loaded', 'wp_search_load' );
  * @return void
  */
 function wp_search_activate(): void {
-	require_once WP_SEARCH_PLUGIN_DIR . 'includes/class-indexer.php';
-	require_once WP_SEARCH_PLUGIN_DIR . 'includes/class-settings-indexer.php';
-	require_once WP_SEARCH_PLUGIN_DIR . 'includes/class-menus-indexer.php';
-	( new WP_Search\Settings_Indexer() )->reindex();
-	( new WP_Search\Menus_Indexer() )->reindex();
+	$files = array(
+		'class-indexer.php',
+		'class-settings-indexer.php',
+		'class-menus-indexer.php',
+	);
+	
+	foreach ( $files as $file ) {
+		$path = WP_SEARCH_PLUGIN_DIR . 'includes/' . $file;
+		if ( ! file_exists( $path ) ) {
+			error_log( sprintf( 'wp-search: Missing file %s during activation', $file ) );
+			continue;
+		}
+		require_once $path;
+	}
+	
+	try {
+		( new WP_Search\Settings_Indexer() )->reindex();
+		( new WP_Search\Menus_Indexer() )->reindex();
+	} catch ( \Throwable $e ) {
+		error_log( 'wp-search activation error: ' . $e->getMessage() );
+	}
 }
 register_activation_hook( WP_SEARCH_PLUGIN_FILE, 'wp_search_activate' );
 
 /**
- * * Run on plugin deactivation.
+ * Run on plugin deactivation.
  *
  * @since 1.0.0
  * @return void
  */
 function wp_search_deactivate(): void {
-	require_once WP_SEARCH_PLUGIN_DIR . 'includes/class-indexer.php';
-	require_once WP_SEARCH_PLUGIN_DIR . 'includes/class-settings-indexer.php';
-	require_once WP_SEARCH_PLUGIN_DIR . 'includes/class-menus-indexer.php';
-	delete_transient( WP_Search\Settings_Indexer::INDEX_TRANSIENT_KEY );
-	delete_transient( WP_Search\Menus_Indexer::INDEX_TRANSIENT_KEY );
+	$files = array(
+		'class-indexer.php',
+		'class-settings-indexer.php',
+		'class-menus-indexer.php',
+	);
+	
+	foreach ( $files as $file ) {
+		$path = WP_SEARCH_PLUGIN_DIR . 'includes/' . $file;
+		if ( ! file_exists( $path ) ) {
+			continue;
+		}
+		require_once $path;
+	}
+	
+	if ( class_exists( 'WP_Search\Settings_Indexer' ) ) {
+		delete_transient( WP_Search\Settings_Indexer::INDEX_TRANSIENT_KEY );
+	}
+	
+	if ( class_exists( 'WP_Search\Menus_Indexer' ) ) {
+		delete_transient( WP_Search\Menus_Indexer::INDEX_TRANSIENT_KEY );
+	}
 }
 register_deactivation_hook( WP_SEARCH_PLUGIN_FILE, 'wp_search_deactivate' );
