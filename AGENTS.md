@@ -2,6 +2,34 @@
 
 You are working inside an AI Labs Cohort #2 Paperclip hackathon participant company.
 
+## Read first — operating rules
+
+**`COMPANY_OPERATING_RULES.md` is binding and overrides any plan, delegation
+document, or issue body that conflicts with it.** Read it before starting work.
+
+The seven rules in short form:
+
+1. Nothing enters docs / assets / release / audit until a human has confirmed the
+   feature works in the sandbox.
+2. Two issues in flight, company-wide. Not two per agent.
+3. Issues close on pasted command output, never on a document. Banned in
+   acceptance criteria: *comprehensive, robust, graceful, user-friendly, proper,
+   improved, optimized, best-practice, where applicable, as needed*.
+4. Do not create `.md` files outside the plugin directory unless asked.
+   `CHANGELOG.md` and `README.md` are the only standing exceptions.
+5. Before editing a plugin you did not create, read its header and state the
+   `Author:` in the issue. Not this company → stop and escalate.
+6. Deleting a plugin closes its open issues the same session, as
+   **obsolete — target deleted in `<sha>`**, never as `done`.
+7. Default to execute. No approval gates. Escalate only on the five named
+   triggers in the rules file.
+
+**`/archive/` contains obsolete plans for two deleted plugins. Nothing in it is a
+live instruction.** If a pointer sends you there, you followed a stale reference —
+stop and re-read this file.
+
+**Live work is `CEO_WORK_ORDER_IA-126.md` and nothing else.**
+
 ## Role model
 
 - The seeded `Chief of Staff` coordinates; you do not implement as the Chief.
