@@ -145,6 +145,17 @@
 				const isEditable = /^(input|textarea|select)$/i.test(e.target.tagName) || e.target.isContentEditable;
 				if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k' && !isEditable) {
 					e.preventDefault();
+
+					if (this.config.debug_mode) {
+						const query = prompt('Search query:');
+						if (query && query.trim()) {
+							const url = new URL(this.config.rest_url);
+							url.searchParams.set('q', query.trim());
+							window.location.assign(url.toString());
+						}
+						return;
+					}
+
 					this.open();
 				}
 			});
