@@ -116,6 +116,15 @@ class REST_Controller {
 	 * @return true|\WP_Error
 	 */
 	public function check_permission() {
+		$nonce = isset( $_SERVER['HTTP_X_WP_NONCE'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_WP_NONCE'] ) ) : '';
+		if ( $nonce && ! wp_verify_nonce( $nonce, 'wp_rest' ) ) {
+			return new \WP_Error(
+				'wp_search_bad_nonce',
+				__( 'Invalid or expired REST nonce.', 'wp-search' ),
+				array( 'status' => 403 )
+			);
+		}
+
 		if ( current_user_can( 'manage_options' ) ) {
 			return true;
 		}
@@ -128,7 +137,12 @@ class REST_Controller {
 	}
 
 	/**
-	 * Search across settings, content, and products.
+	 * Search across the four spotlight facets (users, plugins, options, settings).
+	 *
+	 * Each Spotlight_Provider returns its full record set; the Spotlight engine
+	 * matches against `search.terms` only and ranks by `search.weight`. The
+	 * response is grouped into facet arrays with a `_meta` block, matching the
+	 * spotlight-data.json shape.
 	 *
 	 * @since 1.0.0
 	 * @param \WP_REST_Request $request REST request.
@@ -136,22 +150,23 @@ class REST_Controller {
 	 */
 	public function search_items( \WP_REST_Request $request ) {
 		$query   = sanitize_text_field( $request->get_param( 'q' ) );
-		$results = array();
+		$records = array();
 
 		foreach ( $this->get_indexers() as $indexer ) {
-			if ( ! $indexer instanceof Indexer ) {
+			if ( ! $indexer instanceof Spotlight_Provider ) {
+				continue; // Non-spotlight indexers (menus/posts/products) are out of scope.
+			}
+			try {
+				$records = array_merge( $records, $indexer->get_records() );
+			} catch ( \Throwable $e ) {
+				error_log( 'wp-search spotlight provider error: ' . $e->getMessage() );
 				continue;
 			}
-			$results = array_merge( $results, $indexer->search( $query ) );
 		}
 
-		return rest_ensure_response(
-			array(
-				'query'   => $query,
-				'count'   => count( $results ),
-				'results' => $results,
-			)
-		);
+		$response = Spotlight::build_response( $records, $query );
+
+		return rest_ensure_response( $response );
 	}
 
 	/**
@@ -161,13 +176,29 @@ class REST_Controller {
 	 * @return array<Indexer>
 	 */
 	protected function get_indexers(): array {
-		return array(
-			new Settings_Indexer(),
-			new Users_Indexer(),
-			new Plugins_Indexer(),
-			new Menus_Indexer(),
-			new Posts_Indexer(),
-			new Products_Indexer(),
+		$indexers = array();
+		$indexer_classes = array(
+			'Settings_Indexer',
+			'Users_Indexer',
+			'Plugins_Indexer',
+			'Options_Indexer',
+			'Menus_Indexer',
+			'Posts_Indexer',
+			'Products_Indexer',
 		);
+		
+		foreach ( $indexer_classes as $class ) {
+			try {
+				$full_class = 'WP_Search\\' . $class;
+				if ( class_exists( $full_class ) ) {
+					$indexers[] = new $full_class();
+				}
+			} catch ( \Throwable $e ) {
+				error_log( 'wp-search: Failed to instantiate indexer ' . $class . ': ' . $e->getMessage() );
+				continue;
+			}
+		}
+		
+		return $indexers;
 	}
 }

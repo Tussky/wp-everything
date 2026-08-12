@@ -131,6 +131,7 @@ class REST_Controller_Tests extends Test_Case {
 	 * @return void
 	 */
 	public function test_check_permission_allows_admin(): void {
+		Functions\when( 'wp_verify_nonce' )->justReturn( true );
 		Functions\when( 'current_user_can' )->justReturn( true );
 
 		$controller = new REST_Controller();
@@ -143,6 +144,7 @@ class REST_Controller_Tests extends Test_Case {
 	 * @return void
 	 */
 	public function test_check_permission_denies_non_admin(): void {
+		Functions\when( 'wp_verify_nonce' )->justReturn( true );
 		Functions\when( 'current_user_can' )->justReturn( false );
 		Functions\when( '__' )->returnArg();
 
@@ -151,6 +153,29 @@ class REST_Controller_Tests extends Test_Case {
 
 		$this->assertInstanceOf( '\WP_Error', $result );
 		$this->assertSame( 'wp_search_forbidden', $result->get_error_code() );
+		$this->assertSame( 403, $result->get_error_data()['status'] );
+	}
+
+	/**
+	 * Invalid or expired nonce should return a distinct 403 error.
+	 *
+	 * @return void
+	 */
+	public function test_check_permission_denies_bad_nonce(): void {
+		$_SERVER['HTTP_X_WP_NONCE'] = 'badnonce123';
+
+		Functions\when( 'wp_verify_nonce' )->justReturn( false );
+		Functions\when( 'wp_unslash' )->returnArg();
+		Functions\when( 'sanitize_text_field' )->returnArg();
+		Functions\when( '__' )->returnArg();
+
+		$controller = new REST_Controller();
+		$result = $controller->check_permission();
+
+		unset( $_SERVER['HTTP_X_WP_NONCE'] );
+
+		$this->assertInstanceOf( '\WP_Error', $result );
+		$this->assertSame( 'wp_search_bad_nonce', $result->get_error_code() );
 		$this->assertSame( 403, $result->get_error_data()['status'] );
 	}
 
