@@ -167,4 +167,47 @@ class Menus_Indexer_Tests extends Test_Case {
 		$this->assertSame( 2, $count );
 		$this->assertSame( 2, count( get_transient( Menus_Indexer::INDEX_TRANSIENT_KEY ) ) );
 	}
+
+	/**
+	 * Reindex outside admin (e.g. a REST request) must not fatal and must
+	 * return 0 when the $menu/$submenu globals are undefined.
+	 *
+	 * Regression: reindex() passed these globals to collect( array $menu,
+	 * array $submenu ) which is strictly typed to array, producing a
+	 * TypeError -> HTTP 500 when the menus transient was empty/missing.
+	 *
+	 * @return void
+	 */
+	public function test_reindex_returns_zero_when_menu_globals_absent(): void {
+		Functions\when( 'is_admin' )->justReturn( false );
+
+		global $menu, $submenu;
+		unset( $menu, $submenu );
+
+		$indexer = new Menus_Indexer();
+		$count   = $indexer->reindex();
+
+		$this->assertSame( 0, $count );
+		$this->assertFalse( get_transient( Menus_Indexer::INDEX_TRANSIENT_KEY ) );
+	}
+
+	/**
+	 * Search outside admin with no cached index must not fatal and must
+	 * return an empty result set rather than triggering a rebuild that
+	 * reads undefined menu globals (the HTTP 500 regression).
+	 *
+	 * @return void
+	 */
+	public function test_search_outside_admin_without_index_returns_empty(): void {
+		Functions\when( 'is_admin' )->justReturn( false );
+		Functions\when( 'current_user_can' )->justReturn( true );
+
+		global $menu, $submenu;
+		unset( $menu, $submenu );
+
+		$indexer = new Menus_Indexer();
+		$results = $indexer->search( 'general' );
+
+		$this->assertSame( array(), $results );
+	}
 }
