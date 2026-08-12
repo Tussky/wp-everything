@@ -83,6 +83,7 @@ class Users_Indexer extends Indexer {
 					'user_login'   => $user->user_login,
 					'email'        => $user->user_email,
 					'avatar_url'   => is_string( $avatar_url ) ? $avatar_url : '',
+					'url'          => admin_url( 'user-edit.php?user_id=' . intval( $user->ID ) ),
 					'edit_url'     => admin_url( 'user-edit.php?user_id=' . intval( $user->ID ) ),
 				)
 			);

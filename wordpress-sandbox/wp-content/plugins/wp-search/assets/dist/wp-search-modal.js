@@ -9,11 +9,26 @@
 (function() {
 	'use strict';
 
-	const SOURCE_LABELS = {
-		settings: 'Settings',
-		content: 'Content',
-		products: 'Products',
+	/**
+	 * Display configuration for each source type.
+	 *
+	 * @type {Object<string, {label: string, icon: string, badgeClass: string}>}
+	 */
+	const SOURCE_CONFIG = {
+		content:  { label: 'Posts',   icon: 'dashicons-admin-post',    badgeClass: 'wp-search-badge--posts' },
+		users:    { label: 'Users',   icon: 'dashicons-admin-users',   badgeClass: 'wp-search-badge--users' },
+		plugins:  { label: 'Plugins', icon: 'dashicons-admin-plugins', badgeClass: 'wp-search-badge--plugins' },
+		settings: { label: 'Options', icon: 'dashicons-admin-generic', badgeClass: 'wp-search-badge--options' },
+		menus:    { label: 'Menus',   icon: 'dashicons-menu',           badgeClass: 'wp-search-badge--menus' },
+		products: { label: 'Products',icon: 'dashicons-cart',           badgeClass: 'wp-search-badge--products' },
 	};
+
+	/**
+	 * Default display order for source groups.
+	 *
+	 * @type {Array<string>}
+	 */
+	const SOURCE_ORDER = ['content', 'users', 'plugins', 'settings', 'menus', 'products'];
 
 	/**
 	 * REST client for search requests.
@@ -29,21 +44,21 @@
 		}
 
 		/**
-		 * Search the REST endpoint.
+		 * Search the REST endpoint via POST.
 		 *
 		 * @param {string} query
 		 * @param {AbortSignal|null} signal
 		 * @return {Promise<Object>}
 		 */
 		search(query, signal) {
-			const url = new URL(this.restUrl);
-			url.searchParams.set('q', query);
-
-			return fetch(url.toString(), {
+			return fetch(this.restUrl, {
+				method: 'POST',
 				headers: {
+					'Content-Type': 'application/json',
 					'X-WP-Nonce': this.restNonce,
 					'Accept': 'application/json',
 				},
+				body: JSON.stringify({ q: query }),
 				signal: signal,
 			}).then(function (r) {
 				if (!r.ok) {
@@ -110,6 +125,7 @@
 					'<div class="wp-search-modal__footer">' +
 						'<span><kbd>↑</kbd> <kbd>↓</kbd> ' + this._esc(strings.navigate || 'navigate') + '</span>' +
 						'<span><kbd>↵</kbd> ' + this._esc(strings.select || 'select') + '</span>' +
+						'<span class="wp-search-modal__footer-shortcut">' + this._esc(strings.shortcutHint || 'Ctrl K') + '</span>' +
 					'</div>' +
 				'</div>';
 
@@ -148,6 +164,15 @@
 					}
 				});
 			});
+
+			// Fallback: admin bar node click.
+			const adminBarLink = document.querySelector('#wp-admin-bar-wp-search a');
+			if (adminBarLink) {
+				adminBarLink.addEventListener('click', (e) => {
+					e.preventDefault();
+					this.open();
+				});
+			}
 
 			this.overlay.addEventListener('click', (e) => {
 				if (e.target === this.overlay) {
@@ -215,7 +240,7 @@
 			this.spinner.classList.add('is-visible');
 			this.debounceTimer = setTimeout(() => {
 				this.performSearch(query);
-			}, 200);
+			}, 150);
 		}
 
 		/**
@@ -369,22 +394,31 @@
 			let globalIndex = 0;
 
 			groups.forEach((group) => {
-				html += '<div class="wp-search-modal__group-label" id="wp-search-group-' + this._esc(group.source) + '">' + this._esc(group.label) + '</div>';
+				const config = SOURCE_CONFIG[group.source] || { label: group.source, icon: 'dashicons-admin-generic', badgeClass: '' };
+				html += '<div class="wp-search-modal__group" role="group" aria-labelledby="wp-search-group-' + this._esc(group.source) + '">';
+				html += '<div class="wp-search-modal__group-label" id="wp-search-group-' + this._esc(group.source) + '">' +
+						'<span class="dashicons ' + this._esc(config.icon) + '" aria-hidden="true"></span>' +
+						this._esc(config.label) +
+					'</div>';
+
 				group.items.forEach((item) => {
 					const id = 'wp-search-result-' + globalIndex++;
 					const url = this._esc(item.url || '');
 					const title = this.highlight(this._esc(item.title || '(no title)'), this._esc(query));
 					const description = item.description ? '<div class="wp-search-modal__item-meta">' + this._esc(item.description) + '</div>' : '';
-					const typeLabel = this._esc(item.type || '');
+					const typeLabel = (SOURCE_CONFIG[item.source] || {}).label || this._esc(item.source || '');
+					const badgeClass = (SOURCE_CONFIG[item.source] || {}).badgeClass || '';
 
 					html += '<a href="' + url + '" class="wp-search-modal__item" id="' + id + '" data-url="' + url + '" role="option" tabindex="-1">' +
 							'<div class="wp-search-modal__item-body">' +
 								'<div class="wp-search-modal__item-title">' + title + '</div>' +
 								description +
 							'</div>' +
-							'<span class="wp-search-modal__item-source">' + typeLabel + '</span>' +
+							'<span class="wp-search-modal__item-source ' + this._esc(badgeClass) + '">' + typeLabel + '</span>' +
 						'</a>';
 				});
+
+				html += '</div>';
 			});
 
 			this.resultsEl.innerHTML = html;
@@ -411,12 +445,10 @@
 				map[s].push(r);
 			});
 
-			const order = ['settings', 'content', 'products'];
-			return order
-				.filter((k) => map[k])
+			return SOURCE_ORDER
+				.filter((k) => map[k] && map[k].length)
 				.map((k) => ({
 					source: k,
-					label: SOURCE_LABELS[k] || k,
 					items: map[k],
 				}));
 		}

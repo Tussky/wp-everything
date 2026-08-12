@@ -75,13 +75,14 @@ class Plugins_Indexer extends Indexer {
 				continue;
 			}
 
-			$results[] = $this->normalize_record(
+$results[] = $this->normalize_record(
 				array(
 					'title'             => $name,
 					'name'              => $name,
 					'description'       => $description,
 					'author'            => $author,
 					'status'            => is_plugin_active( $plugin_file ) ? 'active' : 'inactive',
+					'url'               => admin_url( 'plugins.php' ),
 					'plugins_page_link' => admin_url( 'plugins.php' ),
 				)
 			);
