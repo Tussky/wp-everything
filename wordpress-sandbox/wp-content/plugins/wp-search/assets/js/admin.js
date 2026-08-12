@@ -145,12 +145,6 @@
 				const isEditable = /^(input|textarea|select)$/i.test(e.target.tagName) || e.target.isContentEditable;
 				if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k' && !isEditable) {
 					e.preventDefault();
-
-					if (this.config.debug_mode) {
-						window.location.assign(this.config.rest_url);
-						return;
-					}
-
 					this.open();
 				}
 			});
@@ -275,6 +269,27 @@
 		}
 
 		/**
+		 * Navigate to the raw REST JSON for a query (debug mode).
+		 *
+		 * The nonce travels as a query param because a top-level navigation
+		 * cannot send the X-WP-Nonce header the modal's fetch() uses. Without
+		 * it, core's rest_cookie_check_errors() resets the current user to 0
+		 * and the endpoint's manage_options check returns 403.
+		 *
+		 * @param {string} query
+		 */
+		redirectToRawJson(query) {
+			if (!query) {
+				return;
+			}
+
+			const url = new URL(this.config.rest_url, window.location.origin);
+			url.searchParams.set('q', query);
+			url.searchParams.set('_wpnonce', this.config.rest_nonce || '');
+			window.location.assign(url.toString());
+		}
+
+		/**
 		 * Handle keyboard navigation inside the modal.
 		 *
 		 * @param {KeyboardEvent} e
@@ -304,6 +319,12 @@
 
 			if (e.key === 'Enter') {
 				e.preventDefault();
+
+				if (this.config.debug_mode) {
+					this.redirectToRawJson(this.input.value.trim());
+					return;
+				}
+
 				this.activateSelection();
 				return;
 			}
