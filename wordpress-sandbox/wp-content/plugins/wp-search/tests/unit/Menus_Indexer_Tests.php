@@ -182,7 +182,8 @@ class Menus_Indexer_Tests extends Test_Case {
 		Functions\when( 'is_admin' )->justReturn( false );
 
 		global $menu, $submenu;
-		unset( $menu, $submenu );
+		$menu    = null;
+		$submenu = null;
 
 		$indexer = new Menus_Indexer();
 		$count   = $indexer->reindex();
@@ -203,7 +204,8 @@ class Menus_Indexer_Tests extends Test_Case {
 		Functions\when( 'current_user_can' )->justReturn( true );
 
 		global $menu, $submenu;
-		unset( $menu, $submenu );
+		$menu    = null;
+		$submenu = null;
 
 		$indexer = new Menus_Indexer();
 		$results = $indexer->search( 'general' );
