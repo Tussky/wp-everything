@@ -112,6 +112,24 @@ class Menus_Indexer extends Indexer {
 	}
 
 	/**
+	 * Retrieve the cached index or rebuild it.
+	 *
+	 * @since 1.0.0
+	 * @return array<mixed> List of indexed menu records.
+	 */
+	public function get_index(): array {
+		$index = get_transient( self::INDEX_TRANSIENT_KEY );
+
+		if ( ! is_array( $index ) || empty( $index ) ) {
+			$index = array();
+			$this->reindex();
+			$index = get_transient( self::INDEX_TRANSIENT_KEY );
+		}
+
+		return is_array( $index ) ? $index : array();
+	}
+
+	/**
 	 * Search cached admin menu items by title.
 	 *
 	 * @since 1.0.0
@@ -123,8 +141,8 @@ class Menus_Indexer extends Indexer {
 			return array();
 		}
 
-		$index = get_transient( self::INDEX_TRANSIENT_KEY );
-		if ( ! is_array( $index ) ) {
+		$index = $this->get_index();
+		if ( empty( $index ) ) {
 			return array();
 		}
 

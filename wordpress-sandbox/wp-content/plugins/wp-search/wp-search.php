@@ -76,7 +76,9 @@ add_action( 'plugins_loaded', 'wp_search_load' );
 function wp_search_activate(): void {
 	require_once WP_SEARCH_PLUGIN_DIR . 'includes/class-indexer.php';
 	require_once WP_SEARCH_PLUGIN_DIR . 'includes/class-settings-indexer.php';
+	require_once WP_SEARCH_PLUGIN_DIR . 'includes/class-menus-indexer.php';
 	( new WP_Search\Settings_Indexer() )->reindex();
+	( new WP_Search\Menus_Indexer() )->reindex();
 }
 register_activation_hook( WP_SEARCH_PLUGIN_FILE, 'wp_search_activate' );
 
@@ -89,6 +91,8 @@ register_activation_hook( WP_SEARCH_PLUGIN_FILE, 'wp_search_activate' );
 function wp_search_deactivate(): void {
 	require_once WP_SEARCH_PLUGIN_DIR . 'includes/class-indexer.php';
 	require_once WP_SEARCH_PLUGIN_DIR . 'includes/class-settings-indexer.php';
+	require_once WP_SEARCH_PLUGIN_DIR . 'includes/class-menus-indexer.php';
 	delete_transient( WP_Search\Settings_Indexer::INDEX_TRANSIENT_KEY );
+	delete_transient( WP_Search\Menus_Indexer::INDEX_TRANSIENT_KEY );
 }
 register_deactivation_hook( WP_SEARCH_PLUGIN_FILE, 'wp_search_deactivate' );
