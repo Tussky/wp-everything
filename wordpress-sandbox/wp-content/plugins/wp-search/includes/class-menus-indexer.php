@@ -100,6 +100,12 @@ class Menus_Indexer extends Indexer {
 	public function reindex(): int {
 		global $menu, $submenu;
 
+		// Only rebuild if menu globals are populated (admin context).
+		// Menu globals are unavailable outside wp-admin, so defer to admin_init.
+		if ( ! is_array( $menu ) || ! is_array( $submenu ) ) {
+			return 0;
+		}
+
 		$index = $this->collect( $menu, $submenu );
 
 		set_transient(
@@ -122,8 +128,11 @@ class Menus_Indexer extends Indexer {
 
 		if ( ! is_array( $index ) || empty( $index ) ) {
 			$index = array();
-			$this->reindex();
-			$index = get_transient( self::INDEX_TRANSIENT_KEY );
+			// Only rebuild if we're in admin context where menu globals are available
+			if ( is_admin() ) {
+				$this->reindex();
+				$index = get_transient( self::INDEX_TRANSIENT_KEY );
+			}
 		}
 
 		return is_array( $index ) ? $index : array();
@@ -143,7 +152,14 @@ class Menus_Indexer extends Indexer {
 
 		$index = $this->get_index();
 		if ( empty( $index ) ) {
-			return array();
+			// If index is empty, try to rebuild it now if we're in admin context
+			if ( is_admin() ) {
+				$this->reindex();
+				$index = $this->get_index();
+			}
+			if ( empty( $index ) ) {
+				return array();
+			}
 		}
 
 		$query   = $this->normalize_query( $query );

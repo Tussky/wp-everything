@@ -205,7 +205,12 @@ class Settings_Indexer extends Indexer {
 
 		$records = array();
 
-		if ( ! empty( $menu ) && is_array( $menu ) ) {
+		// Menu globals are only available in admin context
+		if ( ! is_array( $menu ) || ! is_array( $submenu ) ) {
+			return $records;
+		}
+
+		if ( ! empty( $menu ) ) {
 			foreach ( $menu as $item ) {
 				$slug = $item[2] ?? '';
 				if ( empty( $slug ) || strpos( $slug, 'separator' ) === 0 ) {
@@ -223,7 +228,7 @@ class Settings_Indexer extends Indexer {
 			}
 		}
 
-		if ( ! empty( $submenu ) && is_array( $submenu ) ) {
+		if ( ! empty( $submenu ) ) {
 			foreach ( $submenu as $parent => $items ) {
 				foreach ( $items as $item ) {
 					$slug = $item[2] ?? '';
