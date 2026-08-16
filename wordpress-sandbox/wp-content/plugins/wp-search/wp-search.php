@@ -44,6 +44,7 @@ if ( ! defined( 'WP_SEARCH_PLUGIN_URL' ) ) {
  */
 function wp_search_load(): void {
 	$files = array(
+		'interface-spotlight-provider.php',
 		'class-indexer.php',
 		'class-settings-indexer.php',
 		'class-users-indexer.php',

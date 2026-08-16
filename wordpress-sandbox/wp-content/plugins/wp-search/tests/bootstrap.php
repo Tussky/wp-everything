@@ -84,6 +84,7 @@ if ( ! class_exists( 'WP_REST_Server' ) ) {
 
 // Load core plugin classes.
 $includes = array(
+	'interface-spotlight-provider.php',
 	'class-indexer.php',
 	'class-settings-indexer.php',
 	'class-users-indexer.php',
@@ -91,6 +92,7 @@ $includes = array(
 	'class-menus-indexer.php',
 	'class-posts-indexer.php',
 	'class-products-indexer.php',
+	'class-options-indexer.php',
 	'class-rest-controller.php',
 );
 
