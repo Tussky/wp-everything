@@ -17,6 +17,7 @@
 			<file>tests/unit/Posts_Indexer_Tests.php</file>
 			<file>tests/unit/Plugins_Indexer_Tests.php</file>
 			<file>tests/unit/Menus_Indexer_Tests.php</file>
+			<file>tests/unit/Options_Indexer_Tests.php</file>
 		</testsuite>
 	</testsuites>
 </phpunit>

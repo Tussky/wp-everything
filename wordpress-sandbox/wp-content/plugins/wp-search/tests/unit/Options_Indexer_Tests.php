@@ -1,0 +1,248 @@
+<?php
+/**
+ * Options Indexer unit tests.
+ *
+ * @package WP_Search
+ */
+
+namespace WP_Search\Tests;
+
+use Brain\Monkey\Functions;
+use WP_Search\Options_Indexer;
+
+/**
+ * Tests for Options_Indexer.
+ */
+class Options_Indexer_Tests extends Test_Case {
+
+	/**
+	 * Fake rows returned by $wpdb->get_results.
+	 *
+	 * @var array<object>
+	 */
+	private static $fake_rows = array();
+
+	/**
+	 * Set up stubs before each test.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
+
+		Functions\when( 'current_user_can' )->justReturn( true );
+		Functions\when( 'wp_strip_all_tags' )->returnArg();
+		Functions\when( 'is_serialized_string' )->justReturn( false );
+		Functions\when( 'sanitize_text_field' )->returnArg();
+
+		self::$fake_rows = array();
+
+		$GLOBALS['wpdb'] = \Mockery::mock( '\wpdb' );
+		$GLOBALS['wpdb']->options = 'wp_options';
+		$GLOBALS['wpdb']->shouldReceive( 'get_results' )->andReturnUsing(
+			function () {
+				return self::$fake_rows;
+			}
+		);
+		$GLOBALS['wpdb']->shouldReceive( 'prepare' )->andReturn( 'SELECT option_name, option_value, autoload FROM wp_options WHERE option_name IN (?,?,?,?,?,?,?,?,?,?,?,?,?)' );
+	}
+
+	/**
+	 * Clean up after each test.
+	 *
+	 * @return void
+	 */
+	protected function tearDown(): void {
+		unset( $GLOBALS['wpdb'] );
+		parent::tearDown();
+	}
+
+	/**
+	 * Source label must be options.
+	 *
+	 * @return void
+	 */
+	public function test_source_constant(): void {
+		$this->assertSame( 'options', Options_Indexer::SOURCE );
+	}
+
+	/**
+	 * Missing permission should yield no records.
+	 *
+	 * @return void
+	 */
+	public function test_get_records_requires_manage_options(): void {
+		Functions\when( 'current_user_can' )->justReturn( false );
+
+		$indexer = new Options_Indexer();
+		$this->assertEmpty( $indexer->get_records() );
+	}
+
+	/**
+	 * Empty database results should yield empty array.
+	 *
+	 * @return void
+	 */
+	public function test_get_records_returns_empty_with_no_rows(): void {
+		self::$fake_rows = array();
+
+		$indexer = new Options_Indexer();
+		$this->assertEmpty( $indexer->get_records() );
+	}
+
+	/**
+	 * A simple unprotected option should produce a full spotlight record.
+	 *
+	 * @return void
+	 */
+	public function test_get_records_returns_unprotected_option(): void {
+		self::$fake_rows = array(
+			(object) array(
+				'option_name'  => 'blogname',
+				'option_value' => 'Northwind Goods',
+				'autoload'     => 'yes',
+			),
+		);
+
+		$indexer = new Options_Indexer();
+		$records = $indexer->get_records();
+
+		$this->assertCount( 1, $records );
+		$record = $records[0];
+
+		$this->assertSame( 'o-1', $record['id'] );
+		$this->assertSame( 'options', $record['facet'] );
+		$this->assertSame( 90, $record['search']['weight'] );
+		$this->assertContains( 'blogname', $record['search']['terms'] );
+		$this->assertContains( 'Northwind Goods', $record['search']['terms'] );
+		$this->assertContains( 'The', $record['search']['terms'] );
+		$this->assertContains( 'site', $record['search']['terms'] );
+		$this->assertSame( 'blogname', $record['display']['name'] );
+		$this->assertSame( 'Northwind Goods', $record['display']['value'] );
+		$this->assertSame( 'yes', $record['display']['autoload'] );
+		$this->assertFalse( $record['display']['protected'] );
+	}
+
+	/**
+	 * A protected option should mask the value and exclude it from terms.
+	 *
+	 * @return void
+	 */
+	public function test_get_records_returns_protected_option(): void {
+		self::$fake_rows = array(
+			(object) array(
+				'option_name'  => 'akismet_api_key',
+				'option_value' => 'abc123secret',
+				'autoload'     => 'yes',
+			),
+		);
+
+		$indexer = new Options_Indexer();
+		$records = $indexer->get_records();
+
+		$this->assertCount( 1, $records );
+		$record = $records[0];
+
+		$this->assertNull( $record['display']['value'] );
+		$this->assertTrue( $record['display']['protected'] );
+		$this->assertNotContains( 'abc123secret', $record['search']['terms'] );
+		$this->assertContains( 'akismet_api_key', $record['search']['terms'] );
+	}
+
+	/**
+	 * A serialized value should be excluded from search terms.
+	 *
+	 * @return void
+	 */
+	public function test_get_records_excludes_serialized_value_from_terms(): void {
+		Functions\when( 'is_serialized_string' )->justReturn( true );
+
+		self::$fake_rows = array(
+			(object) array(
+				'option_name'  => 'active_plugins',
+				'option_value' => 'a:2:{i:0;s:27:"woocommerce/woocommerce.php";i:1;s:19:"akismet/akismet.php";}',
+				'autoload'     => 'yes',
+			),
+		);
+
+		$indexer = new Options_Indexer();
+		$records = $indexer->get_records();
+
+		$this->assertCount( 1, $records );
+		$record = $records[0];
+
+		$this->assertNotContains( 'a:2:', $record['search']['terms'] );
+		$this->assertContains( 'active_plugins', $record['search']['terms'] );
+	}
+
+	/**
+	 * A value longer than 500 characters should be excluded from search terms.
+	 *
+	 * @return void
+	 */
+	public function test_get_records_excludes_long_value_from_terms(): void {
+		self::$fake_rows = array(
+			(object) array(
+				'option_name'  => 'long_option',
+				'option_value' => str_repeat( 'x', 501 ),
+				'autoload'     => 'yes',
+			),
+		);
+
+		$indexer = new Options_Indexer();
+		$records = $indexer->get_records();
+
+		$this->assertCount( 1, $records );
+		$this->assertNotContains( str_repeat( 'x', 501 ), $records[0]['search']['terms'] );
+	}
+
+	/**
+	 * MariaDB ON/OFF autoload values should be normalized to yes/no.
+	 *
+	 * @return void
+	 */
+	public function test_get_records_normalizes_autoload_on_off(): void {
+		self::$fake_rows = array(
+			(object) array(
+				'option_name'  => 'siteurl',
+				'option_value' => 'https://example.com',
+				'autoload'     => 'on',
+			),
+		);
+
+		$indexer = new Options_Indexer();
+		$records = $indexer->get_records();
+
+		$this->assertSame( 'yes', $records[0]['display']['autoload'] );
+	}
+
+	/**
+	 * search() returns empty array — matching is done by Spotlight engine.
+	 *
+	 * @return void
+	 */
+	public function test_search_returns_empty(): void {
+		$indexer = new Options_Indexer();
+		$this->assertEmpty( $indexer->search( 'anything' ) );
+	}
+
+	/**
+	 * get_source returns the source string.
+	 *
+	 * @return void
+	 */
+	public function test_get_source(): void {
+		$indexer = new Options_Indexer();
+		$this->assertSame( 'options', $indexer->get_source() );
+	}
+
+	/**
+	 * reindex returns 0 — options are live-read.
+	 *
+	 * @return void
+	 */
+	public function test_reindex_returns_zero(): void {
+		$indexer = new Options_Indexer();
+		$this->assertSame( 0, $indexer->reindex() );
+	}
+}

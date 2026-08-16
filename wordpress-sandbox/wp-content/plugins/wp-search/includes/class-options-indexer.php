@@ -104,43 +104,15 @@ class Options_Indexer extends Indexer implements Spotlight_Provider {
 	}
 
 	/**
-	 * Search options by name, explainer keywords or unprotected value.
+	 * Search is handled by Spotlight::record_matches() against the full
+	 * record set. This indexer only needs get_records().
 	 *
 	 * @since 1.0.0
 	 * @param string $query Search query.
 	 * @return array<mixed>
 	 */
 	public function search( string $query ): array {
-		if ( ! current_user_can( 'manage_options' ) || '' === trim( $query ) ) {
-			return array();
-		}
-
-		$records = $this->get_records();
-		if ( empty( $records ) ) {
-			return array();
-		}
-
-		$term    = $this->normalize_query( $query );
-		$results = array();
-
-		foreach ( $records as $record ) {
-			if ( ! is_array( $record ) || ! isset( $record['search']['terms'] ) || ! is_array( $record['search']['terms'] ) ) {
-				continue;
-			}
-
-			foreach ( $record['search']['terms'] as $haystack ) {
-				if ( ! is_string( $haystack ) ) {
-					continue;
-				}
-
-				if ( false !== strpos( $this->normalize_query( $haystack ), $term ) ) {
-					$results[] = $record;
-					break;
-				}
-			}
-		}
-
-		return $results;
+		return array();
 	}
 
 	/**
@@ -199,7 +171,7 @@ class Options_Indexer extends Indexer implements Spotlight_Provider {
 				$terms[] = $explainer_term;
 			}
 
-			if ( ! $protected && null !== $value ) {
+			if ( ! $protected && null !== $value && ! $this->is_machine_readable( $value ) ) {
 				$terms[] = $value;
 			}
 
@@ -299,5 +271,29 @@ class Options_Indexer extends Indexer implements Spotlight_Provider {
 			return 'no';
 		}
 		return $autoload;
+	}
+
+	/**
+	 * Decide whether a value is machine-read (serialized, JSON, or too long)
+	 * and should be omitted from search terms.
+	 *
+	 * @since 1.0.0
+	 * @param string $value Option value.
+	 * @return bool
+	 */
+	private function is_machine_readable( string $value ): bool {
+		if ( strlen( $value ) > 500 ) {
+			return true;
+		}
+		if ( is_serialized_string( $value ) ) {
+			return true;
+		}
+		if ( '{' === substr( ltrim( $value ), 0, 1 ) && '}' === substr( rtrim( $value ), -1 ) ) {
+			$decoded = json_decode( $value, true );
+			if ( JSON_ERROR_NONE === json_last_error() ) {
+				return true;
+			}
+		}
+		return false;
 	}
 }

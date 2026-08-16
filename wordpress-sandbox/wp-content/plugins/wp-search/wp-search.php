@@ -49,6 +49,7 @@ function wp_search_load(): void {
 		'class-settings-indexer.php',
 		'class-users-indexer.php',
 		'class-plugins-indexer.php',
+		'class-options-indexer.php',
 		'class-menus-indexer.php',
 		'class-posts-indexer.php',
 		'class-products-indexer.php',
