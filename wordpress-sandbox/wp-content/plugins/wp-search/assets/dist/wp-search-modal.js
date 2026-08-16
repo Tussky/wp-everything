@@ -434,13 +434,22 @@
 					const url = this._esc(item.url || '');
 					const title = this.highlight(this._esc(item.title || '(no title)'), this._esc(query));
 					const description = item.description ? '<div class="wp-search-modal__item-meta">' + this._esc(item.description) + '</div>' : '';
+					const breadcrumb = Array.isArray(item.breadcrumb) && item.breadcrumb.length
+						? '<div class="wp-search-modal__item-breadcrumb">' + this._esc(item.breadcrumb.join(' › ')) + '</div>'
+						: '';
+					const snippetText = item.snippet ? item.snippet.replace(/<[^>]*>/g, '') : '';
+					const snippet = snippetText
+						? '<div class="wp-search-modal__item-snippet"><code>' + this.highlight(this._esc(snippetText), this._esc(query)) + '</code></div>'
+						: '';
 					const typeLabel = (SOURCE_CONFIG[item.source] || {}).label || this._esc(item.source || '');
 					const badgeClass = (SOURCE_CONFIG[item.source] || {}).badgeClass || '';
 
 					html += '<a href="' + url + '" class="wp-search-modal__item" id="' + id + '" data-url="' + url + '" role="option" tabindex="-1">' +
 							'<div class="wp-search-modal__item-body">' +
 								'<div class="wp-search-modal__item-title">' + title + '</div>' +
+								breadcrumb +
 								description +
+								snippet +
 							'</div>' +
 							'<span class="wp-search-modal__item-source ' + this._esc(badgeClass) + '">' + typeLabel + '</span>' +
 						'</a>';

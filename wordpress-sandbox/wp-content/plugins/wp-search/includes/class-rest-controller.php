@@ -204,12 +204,16 @@ class REST_Controller {
 
 				$display = $record['display'];
 
-				$results[] = array(
-					'source'      => $facet,
-					'url'         => $display['url'] ?? $display['edit_url'] ?? $display['editURL'] ?? '',
-					'title'       => $display['title'] ?? $display['displayName'] ?? $display['display_name'] ?? $display['name'] ?? $display['username'] ?? '',
-					'description' => $display['description'] ?? $display['desc'] ?? '',
-				);
+			$results[] = array(
+				'source'      => $facet,
+				'sourceKind'  => $display['sourceKind'] ?? '',
+				'url'         => $display['url'] ?? $display['edit_url'] ?? $display['editURL'] ?? '',
+				'title'       => $display['title'] ?? $display['displayName'] ?? $display['display_name'] ?? $display['name'] ?? $display['username'] ?? '',
+				'description' => $display['description'] ?? $display['desc'] ?? '',
+				'breadcrumb'  => $display['breadcrumb'] ?? null,
+				'snippet'     => $display['snippet'] ?? '',
+				'language'    => $display['language'] ?? '',
+			);
 			}
 		}
 
