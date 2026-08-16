@@ -4,6 +4,19 @@ All notable changes to this workspace are recorded here. Dates use UTC.
 Plugin-level changes for SiteMap Redirects live in
 `wordpress-sandbox/wp-content/plugins/site-map-redirects/readme.txt`.
 
+## 2026-08-16
+
+- Fixed the fatal that took WordPress down on every request since 2026-08-12:
+  `Spotlight_Provider` was declared by two classes in `bd6a4e1` and never
+  written. Added the interface; `vendor/bin/phpunit` → OK (44 tests).
+- Removed `passwordHash` from `Users_Indexer::get_records()` — it selected
+  `user_pass` into a REST payload. Never leaked; the method has no callers.
+- CI: new `WordPress boots with wp-search active` job installs WordPress,
+  activates the plugin and asserts `/`, `/wp-login.php`, `/wp-admin/` and the
+  REST root render with no PHP error. Both checks now required on this branch.
+- Added `.githooks/pre-push` (syntax, class-link, unit tests) and Rule 8.
+  Enable with `git config core.hooksPath .githooks`.
+
 ## 2026-08-12
 
 - IA-162: Debug-mode Cmd/Ctrl+K redirect fixed. Three defects, for anyone
