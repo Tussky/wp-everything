@@ -47,30 +47,34 @@ class REST_Controller_Tests extends Test_Case {
 	}
 
 	/**
-	 * The search route should be registered with the expected args.
+	 * The search and spotlight routes should be registered with the expected args.
 	 *
 	 * @return void
 	 */
 	public function test_register_routes(): void {
-		$registered = null;
+		$registered = array();
 
 		Functions\when( 'register_rest_route' )->alias(
 			function ( $namespace, $route, $args ) use ( &$registered ) {
-				$registered = compact( 'namespace', 'route', 'args' );
+				$registered[ $route ] = compact( 'namespace', 'route', 'args' );
 			}
 		);
 
 		$controller = new REST_Controller();
 		$controller->register_routes();
 
-		$this->assertNotNull( $registered );
-		$this->assertSame( REST_Controller::NAMESPACE, $registered['namespace'] );
-		$this->assertSame( REST_Controller::ROUTE, $registered['route'] );
-		$this->assertArrayHasKey( 'methods', $registered['args'] );
-		$this->assertArrayHasKey( 'callback', $registered['args'] );
-		$this->assertArrayHasKey( 'permission_callback', $registered['args'] );
-		$this->assertArrayHasKey( 'args', $registered['args'] );
-		$this->assertArrayHasKey( 'q', $registered['args']['args'] );
+		$this->assertCount( 2, $registered );
+
+		foreach ( array( REST_Controller::ROUTE, REST_Controller::SPOTLIGHT_ROUTE ) as $route ) {
+			$this->assertArrayHasKey( $route, $registered );
+			$this->assertSame( REST_Controller::NAMESPACE, $registered[ $route ]['namespace'] );
+			$this->assertSame( $route, $registered[ $route ]['route'] );
+			$this->assertArrayHasKey( 'methods', $registered[ $route ]['args'] );
+			$this->assertArrayHasKey( 'callback', $registered[ $route ]['args'] );
+			$this->assertArrayHasKey( 'permission_callback', $registered[ $route ]['args'] );
+			$this->assertArrayHasKey( 'args', $registered[ $route ]['args'] );
+			$this->assertArrayHasKey( 'q', $registered[ $route ]['args']['args'] );
+		}
 	}
 
 	/**
@@ -226,5 +230,77 @@ class REST_Controller_Tests extends Test_Case {
 
 		$this->assertSame( 'xyz', $response['query'] );
 		$this->assertCount( 0, $response['results'] );
+	}
+
+	/**
+	 * The spotlight route should return the four facets grouped with navigation URLs.
+	 *
+	 * @return void
+	 */
+	public function test_spotlight_items_returns_facets_and_navigation(): void {
+		Functions\when( 'admin_url' )->alias(
+			function ( $path ) {
+				return 'https://example.com/wp-admin/' . $path;
+			}
+		);
+
+		$request = Mockery::mock( 'WP_REST_Request' );
+		$request->shouldReceive( 'get_param' )->with( 'q' )->andReturn( 'admin' );
+
+		$stubs = array(
+			'users'    => array(
+				array(
+					'id'      => 'u-1',
+					'facet'   => 'users',
+					'search'  => array( 'terms' => array( 'admin' ), 'weight' => 100 ),
+					'display' => array( 'displayName' => 'Admin', 'url' => 'https://example.com/wp-admin/user-edit.php?user_id=1' ),
+				),
+			),
+			'plugins'  => array(
+				array(
+					'id'      => 'p-1',
+					'facet'   => 'plugins',
+					'search'  => array( 'terms' => array( 'admin' ), 'weight' => 90 ),
+					'display' => array( 'name' => 'Admin', 'url' => 'https://example.com/wp-admin/plugins.php' ),
+				),
+			),
+			'options'  => array(
+				array(
+					'id'      => 'o-1',
+					'facet'   => 'options',
+					'search'  => array( 'terms' => array( 'admin_email' ), 'weight' => 80 ),
+					'display' => array( 'name' => 'admin_email', 'url' => 'https://example.com/wp-admin/options-general.php' ),
+				),
+			),
+			'settings' => array(
+				array(
+					'id'      => 's-1',
+					'facet'   => 'settings',
+					'search'  => array( 'terms' => array( 'admin' ), 'weight' => 85 ),
+					'display' => array( 'title' => 'Admin', 'url' => 'https://example.com/wp-admin/options-general.php' ),
+				),
+			),
+		);
+
+		$controller = $this->controller_with_stubbed_indexers( $stubs );
+		$response   = $controller->get_spotlight_items( $request );
+
+		$this->assertArrayHasKey( '_meta', $response );
+		$this->assertArrayHasKey( 'users', $response );
+		$this->assertArrayHasKey( 'plugins', $response );
+		$this->assertArrayHasKey( 'options', $response );
+		$this->assertArrayHasKey( 'settings', $response );
+		$this->assertArrayHasKey( 'navigation', $response );
+
+		$this->assertSame( array( 'users', 'plugins', 'options', 'settings' ), $response['_meta']['facetOrder'] );
+		$this->assertSame( 1, $response['_meta']['counts']['users'] );
+		$this->assertSame( 1, $response['_meta']['counts']['plugins'] );
+		$this->assertSame( 1, $response['_meta']['counts']['options'] );
+		$this->assertSame( 1, $response['_meta']['counts']['settings'] );
+
+		$this->assertArrayHasKey( 'users', $response['navigation'] );
+		$this->assertArrayHasKey( 'plugins', $response['navigation'] );
+		$this->assertArrayHasKey( 'options', $response['navigation'] );
+		$this->assertArrayHasKey( 'settings', $response['navigation'] );
 	}
 }

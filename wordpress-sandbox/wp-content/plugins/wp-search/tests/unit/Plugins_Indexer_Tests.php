@@ -160,4 +160,40 @@ class Plugins_Indexer_Tests extends Test_Case {
 		$this->assertSame( Plugins_Indexer::RESULTS_LIMIT, count( $results ) );
 		$this->assertSame( 20, count( $results ) );
 	}
+
+	/**
+	 * get_records should expose every plugin as a spotlight record.
+	 *
+	 * @return void
+	 */
+	public function test_get_records_returns_spotlight_records(): void {
+		Functions\when( 'current_user_can' )->justReturn( true );
+		Functions\when( 'get_plugins' )->justReturn(
+			array(
+				'hello/hello.php' => array(
+					'Name'        => 'Hello Dolly',
+					'Description' => 'A classic WordPress plugin.',
+					'Author'      => 'Matt Mullenweg',
+					'Version'     => '1.7.2',
+				),
+			)
+		);
+		Functions\when( 'is_plugin_active' )->justReturn( true );
+		Functions\when( 'get_site_transient' )->justReturn( false );
+
+		$indexer = new Plugins_Indexer();
+		$records = $indexer->get_records();
+
+		$this->assertCount( 1, $records );
+		$record = $records[0];
+
+		$this->assertStringStartsWith( 'p-', $record['id'] );
+		$this->assertSame( 'plugins', $record['facet'] );
+		$this->assertArrayHasKey( 'search', $record );
+		$this->assertArrayHasKey( 'display', $record );
+		$this->assertSame( 'Hello Dolly', $record['display']['name'] );
+		$this->assertTrue( $record['display']['active'] );
+		$this->assertArrayHasKey( 'url', $record['display'] );
+		$this->assertNotEmpty( $record['display']['url'] );
+	}
 }

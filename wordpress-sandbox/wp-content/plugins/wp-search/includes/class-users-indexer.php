@@ -165,14 +165,15 @@ class Users_Indexer extends Indexer implements Spotlight_Provider {
 				),
 				'display' => array(
 					'username'     => $user->user_login,
-					'displayName'  => $user->display_name,
-					'email'        => $user->user_email,
-					'role'         => $role,
-					'capabilities' => $caps,
-					'registered'   => gmdate( 'Y-m-d', strtotime( $user->user_registered ) ),
-					'lastLogin'    => $last_login,
-					'avatarHue'    => ( (int) $user->ID * 47 ) % 360,
-				),
+				'displayName'  => $user->display_name,
+				'email'        => $user->user_email,
+				'role'         => $role,
+				'capabilities' => $caps,
+				'registered'   => gmdate( 'Y-m-d', strtotime( $user->user_registered ) ),
+				'lastLogin'    => $last_login,
+				'avatarHue'    => ( (int) $user->ID * 47 ) % 360,
+				'url'          => admin_url( 'user-edit.php?user_id=' . intval( $user->ID ) ),
+			),
 			);
 		}
 

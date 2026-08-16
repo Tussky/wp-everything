@@ -187,4 +187,29 @@ class Settings_Indexer_Tests extends Test_Case {
 		$this->assertIsArray( $index );
 		$this->assertNotEmpty( $index );
 	}
+
+	/**
+	 * get_records should expose the cached index as spotlight records.
+	 *
+	 * @return void
+	 */
+	public function test_get_records_returns_spotlight_records(): void {
+		Functions\when( 'current_user_can' )->justReturn( true );
+
+		$indexer = new Settings_Indexer();
+		$this->seed_menu_globals();
+		$indexer->reindex();
+
+		$records = $indexer->get_records();
+		$this->assertIsArray( $records );
+		$this->assertNotEmpty( $records );
+
+		foreach ( $records as $record ) {
+			$this->assertSame( 'settings', $record['facet'] );
+			$this->assertArrayHasKey( 'search', $record );
+			$this->assertArrayHasKey( 'display', $record );
+			$this->assertArrayHasKey( 'url', $record['display'] );
+			$this->assertNotEmpty( $record['display']['url'] );
+		}
+	}
 }

@@ -37,6 +37,14 @@ class REST_Controller {
 	const ROUTE = '/search';
 
 	/**
+	 * Route for grouped spotlight responses.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const SPOTLIGHT_ROUTE = '/spotlight';
+
+	/**
 	 * Initialize REST endpoints.
 	 *
 	 * @since 1.0.0
@@ -53,21 +61,34 @@ class REST_Controller {
 	 * @return void
 	 */
 	public function register_routes(): void {
+		$args = array(
+			'methods'             => array( 'GET', 'POST' ),
+			'permission_callback' => array( $this, 'check_permission' ),
+			'args'                => array(
+				'q' => array(
+					'required'          => false,
+					'default'           => '',
+					'sanitize_callback' => 'sanitize_text_field',
+					'validate_callback' => array( $this, 'validate_query' ),
+				),
+			),
+		);
+
 		register_rest_route(
 			self::NAMESPACE,
 			self::ROUTE,
-			array(
-				'methods'             => array( 'GET', 'POST' ),
-				'callback'            => array( $this, 'search_items' ),
-				'permission_callback' => array( $this, 'check_permission' ),
-				'args'                => array(
-					'q' => array(
-						'required'          => false,
-						'default'           => '',
-						'sanitize_callback' => 'sanitize_text_field',
-						'validate_callback' => array( $this, 'validate_query' ),
-					),
-				),
+			array_merge(
+				$args,
+				array( 'callback' => array( $this, 'search_items' ) )
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			self::SPOTLIGHT_ROUTE,
+			array_merge(
+				$args,
+				array( 'callback' => array( $this, 'get_spotlight_items' ) )
 			)
 		);
 	}
@@ -148,22 +169,8 @@ class REST_Controller {
 	 * @return \WP_REST_Response|\WP_Error
 	 */
 	public function search_items( \WP_REST_Request $request ) {
-		$query   = sanitize_text_field( $request->get_param( 'q' ) );
-		$records = array();
-
-		foreach ( $this->get_indexers() as $indexer ) {
-			if ( ! $indexer instanceof Spotlight_Provider ) {
-				continue;
-			}
-			try {
-				$records = array_merge( $records, $indexer->get_records() );
-			} catch ( \Throwable $e ) {
-				error_log( 'wp-search spotlight provider error: ' . $e->getMessage() );
-				continue;
-			}
-		}
-
-		$response = Spotlight::build_response( $records, $query );
+		$query    = sanitize_text_field( $request->get_param( 'q' ) );
+		$response = Spotlight::build_response( $this->collect_spotlight_records(), $query );
 
 		return rest_ensure_response(
 			array(
@@ -207,6 +214,60 @@ class REST_Controller {
 		}
 
 		return $results;
+	}
+
+	/**
+	 * Return the grouped Spotlight response for the /spotlight route.
+	 *
+	 * Adds per-facet navigation URLs so consumers can deep-link to the
+	 * relevant admin list screens.
+	 *
+	 * @since 1.0.0
+	 * @param \WP_REST_Request $request REST request.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function get_spotlight_items( \WP_REST_Request $request ) {
+		$query = sanitize_text_field( $request->get_param( 'q' ) );
+
+		$response = Spotlight::build_response( $this->collect_spotlight_records(), $query );
+
+		return rest_ensure_response(
+			array_merge(
+				$response,
+				array(
+					'navigation' => array(
+						'users'    => admin_url( 'users.php' ),
+						'plugins'  => admin_url( 'plugins.php' ),
+						'options'  => admin_url( 'options-general.php' ),
+						'settings' => admin_url( 'options-general.php' ),
+					),
+				)
+			)
+		);
+	}
+
+	/**
+	 * Collect spotlight records from every provider that exposes them.
+	 *
+	 * @since 1.0.0
+	 * @return array<mixed>
+	 */
+	private function collect_spotlight_records(): array {
+		$records = array();
+
+		foreach ( $this->get_indexers() as $indexer ) {
+			if ( ! $indexer instanceof Spotlight_Provider ) {
+				continue;
+			}
+			try {
+				$records = array_merge( $records, $indexer->get_records() );
+			} catch ( \Throwable $e ) {
+				error_log( 'wp-search spotlight provider error: ' . $e->getMessage() );
+				continue;
+			}
+		}
+
+		return $records;
 	}
 
 	/**

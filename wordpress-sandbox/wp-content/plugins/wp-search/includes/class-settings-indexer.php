@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-class Settings_Indexer extends Indexer {
+class Settings_Indexer extends Indexer implements Spotlight_Provider {
 
 	/**
 	 * Source label for results.
@@ -157,6 +157,71 @@ class Settings_Indexer extends Indexer {
 	 */
 	public function get_source(): string {
 		return self::SOURCE;
+	}
+
+	/**
+	 * Return the cached settings index as spotlight records.
+	 *
+	 * @since 1.0.0
+	 * @return array<mixed>
+	 */
+	public function get_records(): array {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return array();
+		}
+
+		$index   = $this->get_index();
+		$records = array();
+		$counter = 0;
+
+		foreach ( $index as $record ) {
+			if ( ! is_array( $record ) ) {
+				continue;
+			}
+
+			$counter++;
+			$type = $record['type'] ?? 'setting';
+
+			$weight = 60;
+			if ( 'menu' === $type ) {
+				$weight = 80;
+			} elseif ( 'section' === $type ) {
+				$weight = 75;
+			} elseif ( 'setting' === $type ) {
+				$weight = 70;
+			}
+
+			$terms = array_values(
+				array_filter(
+					array_unique(
+						array(
+							(string) ( $record['title'] ?? '' ),
+							(string) ( $record['keywords'] ?? '' ),
+							(string) ( $record['type'] ?? '' ),
+							(string) ( $record['description'] ?? '' ),
+						)
+					)
+				)
+			);
+
+			$records[] = array(
+				'id'      => 's-' . $counter,
+				'facet'   => self::SOURCE,
+				'search'  => array(
+					'terms'  => $terms,
+					'weight' => $weight,
+				),
+				'display' => array(
+					'title'       => (string) ( $record['title'] ?? '' ),
+					'description' => (string) ( $record['description'] ?? '' ),
+					'type'        => $type,
+					'parent'      => (string) ( $record['parent'] ?? '' ),
+					'url'         => (string) ( $record['url'] ?? '' ),
+				),
+			);
+		}
+
+		return $records;
 	}
 
 	/**
