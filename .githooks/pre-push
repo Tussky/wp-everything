@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+#
+# pre-push — refuse to push wp-search code that does not load or does not pass.
+#
+# This is the local half of the gate. GitHub Actions runs the same checks plus a
+# real WordPress boot, and is the authoritative one. This hook exists so the
+# failure arrives in two seconds instead of two minutes, and so a branch that
+# cannot load never leaves the machine.
+#
+# Enable once per clone:
+#
+#   git config core.hooksPath .githooks
+#
+set -uo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+PLUGIN="${ROOT}/wordpress-sandbox/wp-content/plugins/wp-search"
+
+# A push that only deletes refs has nothing to check.
+only_deletes=1
+while read -r _local_ref local_sha _remote_ref _remote_sha; do
+	if [ "${local_sha}" != "0000000000000000000000000000000000000000" ]; then
+		only_deletes=0
+	fi
+done
+[ "${only_deletes}" -eq 1 ] && exit 0
+
+[ -d "${PLUGIN}" ] || exit 0
+
+fail() {
+	echo ""
+	echo "  ✗ pre-push blocked: $1"
+	echo ""
+	echo "  Fix it and push again. Do not pass --no-verify — see"
+	echo "  COMPANY_OPERATING_RULES.md, Rule 8."
+	echo ""
+	exit 1
+}
+
+echo "pre-push: checking wp-search…"
+
+# 1. Syntax. Cheapest possible check, catches typos before anything else runs.
+if ! find "${PLUGIN}" -path "${PLUGIN}/vendor" -prune -o -name '*.php' -print \
+	| xargs -n1 -P4 php -l > /tmp/wp-search-lint.$$ 2>&1; then
+	cat /tmp/wp-search-lint.$$
+	rm -f /tmp/wp-search-lint.$$
+	fail "a PHP file has a syntax error"
+fi
+rm -f /tmp/wp-search-lint.$$
+
+# 2. Link check. Loads every class the way plugins_loaded does, with no
+#    WordPress and no composer. This is the check that catches a class
+#    implementing an interface nobody wrote — the IA-158 fatal.
+if ! php -r '
+	define( "ABSPATH", "/ci/" );
+	$dir = $argv[1] . "/includes/";
+	foreach ( glob( $dir . "interface-*.php" ) as $f ) { require_once $f; }
+	foreach ( glob( $dir . "class-indexer.php" ) as $f ) { require_once $f; }
+	foreach ( glob( $dir . "*.php" ) as $f ) { require_once $f; }
+	exit( 0 );
+' "${PLUGIN}" 2>&1; then
+	fail "the plugin classes do not load — WordPress would fatal on every request"
+fi
+
+# 3. Unit tests.
+if [ ! -x "${PLUGIN}/vendor/bin/phpunit" ]; then
+	echo "  ! vendor/ is missing. Run:"
+	echo "      cd wordpress-sandbox/wp-content/plugins/wp-search && composer install"
+	fail "the test suite could not be run"
+fi
+
+if ! ( cd "${PLUGIN}" && vendor/bin/phpunit ); then
+	fail "the unit tests do not pass"
+fi
+
+echo "pre-push: ok"
+exit 0

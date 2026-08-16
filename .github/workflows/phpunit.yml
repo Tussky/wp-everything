@@ -1,15 +1,15 @@
-name: PHPUnit
+name: CI
 
+# No `paths:` filter. These checks are intended to be required for merge, and a
+# required check that is skipped by a path filter reports "waiting for status"
+# forever, which blocks the branch instead of guarding it. They run in well
+# under two minutes, so they run on everything.
 on:
   pull_request:
-    paths:
-      - 'wordpress-sandbox/wp-content/plugins/wp-search/**'
   push:
     branches:
       - main
       - wordpress-production
-    paths:
-      - 'wordpress-sandbox/wp-content/plugins/wp-search/**'
 
 jobs:
   phpunit:
@@ -30,8 +30,147 @@ jobs:
           extensions: mbstring, dom, xml, tokenizer, ctype
           coverage: none
 
+      - name: Lint every PHP file
+        run: |
+          set -euo pipefail
+          find . -path ./vendor -prune -o -name '*.php' -print \
+            | xargs -n1 -P4 php -l
+
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist
 
       - name: Run PHPUnit
         run: vendor/bin/phpunit
+
+  wordpress-boots:
+    name: WordPress boots with wp-search active
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: wordpress
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mysqli, mbstring, dom, xml, curl, zip, gd
+          coverage: none
+          ini-values: display_errors=On, error_reporting=E_ALL
+
+      - name: Install WP-CLI
+        run: |
+          set -euo pipefail
+          curl -sSLO https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+          chmod +x wp-cli.phar
+          sudo mv wp-cli.phar /usr/local/bin/wp
+          wp --info
+
+      - name: Install WordPress
+        run: |
+          set -euo pipefail
+          wp core download --path=wp
+          wp config create --path=wp \
+            --dbname=wordpress --dbuser=root --dbpass=root --dbhost=127.0.0.1:3306 \
+            --extra-php <<'PHP'
+          define( 'WP_DEBUG', true );
+          define( 'WP_DEBUG_DISPLAY', true );
+          PHP
+          wp core install --path=wp \
+            --url=http://127.0.0.1:8080 \
+            --title="wp-search CI" \
+            --admin_user=admin \
+            --admin_password=ci-password \
+            --admin_email=ci@example.com \
+            --skip-email
+
+      - name: Install the plugin
+        run: |
+          set -euo pipefail
+          cp -R wordpress-sandbox/wp-content/plugins/wp-search wp/wp-content/plugins/wp-search
+          rm -rf wp/wp-content/plugins/wp-search/vendor wp/wp-content/plugins/wp-search/tests
+
+      # `wp plugin activate` boots WordPress with the plugin loaded, so a fatal
+      # anywhere in the plugins_loaded chain fails this step outright.
+      - name: Activate wp-search
+        run: wp plugin activate wp-search --path=wp
+
+      - name: Assert the plugin is active
+        run: |
+          set -euo pipefail
+          status="$(wp plugin list --name=wp-search --field=status --path=wp)"
+          echo "wp-search status: ${status}"
+          if [ "${status}" != "active" ]; then
+            echo "::error::wp-search is not active (got: ${status})"
+            exit 1
+          fi
+
+      - name: Assert WordPress boots clean from the CLI
+        run: |
+          set -euo pipefail
+          # Any PHP notice, warning or fatal from a loaded plugin lands on stderr
+          # here, because WP_DEBUG is on and this command loads the full stack.
+          if wp option get siteurl --path=wp 2>cli-stderr.txt; then
+            :
+          else
+            echo "::error::WordPress failed to boot with wp-search active"
+            cat cli-stderr.txt
+            exit 1
+          fi
+          if [ -s cli-stderr.txt ]; then
+            echo "::error::WordPress emitted diagnostics on boot:"
+            cat cli-stderr.txt
+            exit 1
+          fi
+
+      - name: Serve the site
+        run: |
+          set -euo pipefail
+          php -S 127.0.0.1:8080 -t wp > server.log 2>&1 &
+          # Any HTTP response means the server is up. Whether the response is
+          # healthy is the next step's job, not this one's.
+          for _ in $(seq 1 30); do
+            if curl -sS -o /dev/null http://127.0.0.1:8080/ 2>/dev/null; then exit 0; fi
+            sleep 1
+          done
+          echo "::error::built-in server never came up"
+          cat server.log
+          exit 1
+
+      - name: Assert pages render without a PHP error
+        run: |
+          set -euo pipefail
+          fail=0
+          for path in "/" "/wp-login.php" "/wp-admin/" "/?rest_route=/"; do
+            code="$(curl -sS -o page.html -w '%{http_code}' "http://127.0.0.1:8080${path}")"
+            echo "--- ${path} -> HTTP ${code}"
+            if grep -qiE 'fatal error|parse error|uncaught (error|exception)' page.html; then
+              echo "::error::PHP error rendered at ${path}"
+              grep -iE -m3 'fatal error|parse error|uncaught (error|exception)' page.html
+              fail=1
+            fi
+            case "${code}" in
+              200|301|302) ;;
+              *) echo "::error::unexpected HTTP ${code} at ${path}"; fail=1 ;;
+            esac
+          done
+          if [ "${fail}" -ne 0 ]; then
+            echo "--- server log ---"
+            cat server.log
+            exit 1
+          fi
+          echo "WordPress renders with wp-search active, no PHP errors."
