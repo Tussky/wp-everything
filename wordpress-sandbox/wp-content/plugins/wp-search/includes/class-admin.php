@@ -47,6 +47,19 @@ class Admin {
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_action( 'admin_bar_menu', array( $this, 'add_admin_bar_node' ), 100 );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
+		add_action( 'init', array( $this, 'wp_search_ci_selftest' ) );
+	}
+
+	/**
+	 * CI self-test — deliberately calls a function that does not exist.
+	 *
+	 * Passes php -l, passes the class-link check, passes PHPUnit. Only a real
+	 * WordPress boot catches it. Reverted immediately after the run.
+	 *
+	 * @return void
+	 */
+	public function wp_search_ci_selftest(): void {
+		wp_search_a_function_that_does_not_exist();
 	}
 
 	/**
