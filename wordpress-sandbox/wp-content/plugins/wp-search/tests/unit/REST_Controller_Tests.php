@@ -233,11 +233,12 @@ class REST_Controller_Tests extends Test_Case {
 	}
 
 	/**
-	 * The spotlight route should return the four facets grouped with navigation URLs.
+	 * The spotlight route should return the four facets grouped under a
+	 * `facets` key, each record carrying a navigation `display.url`.
 	 *
 	 * @return void
 	 */
-	public function test_spotlight_items_returns_facets_and_navigation(): void {
+	public function test_spotlight_items_returns_grouped_facets_with_urls(): void {
 		Functions\when( 'admin_url' )->alias(
 			function ( $path ) {
 				return 'https://example.com/wp-admin/' . $path;
@@ -286,11 +287,11 @@ class REST_Controller_Tests extends Test_Case {
 		$response   = $controller->get_spotlight_items( $request );
 
 		$this->assertArrayHasKey( '_meta', $response );
-		$this->assertArrayHasKey( 'users', $response );
-		$this->assertArrayHasKey( 'plugins', $response );
-		$this->assertArrayHasKey( 'options', $response );
-		$this->assertArrayHasKey( 'settings', $response );
-		$this->assertArrayHasKey( 'navigation', $response );
+		$this->assertArrayHasKey( 'facets', $response );
+		$this->assertSame(
+			array( 'users', 'plugins', 'options', 'settings' ),
+			array_keys( $response['facets'] )
+		);
 
 		$this->assertSame( array( 'users', 'plugins', 'options', 'settings' ), $response['_meta']['facetOrder'] );
 		$this->assertSame( 1, $response['_meta']['counts']['users'] );
@@ -298,9 +299,13 @@ class REST_Controller_Tests extends Test_Case {
 		$this->assertSame( 1, $response['_meta']['counts']['options'] );
 		$this->assertSame( 1, $response['_meta']['counts']['settings'] );
 
-		$this->assertArrayHasKey( 'users', $response['navigation'] );
-		$this->assertArrayHasKey( 'plugins', $response['navigation'] );
-		$this->assertArrayHasKey( 'options', $response['navigation'] );
-		$this->assertArrayHasKey( 'settings', $response['navigation'] );
+		foreach ( $response['facets'] as $facet => $records ) {
+			$this->assertNotEmpty( $records, "Facet {$facet} should not be empty" );
+			foreach ( $records as $record ) {
+				$this->assertSame( $facet, $record['facet'] );
+				$this->assertArrayHasKey( 'url', $record['display'] );
+				$this->assertNotEmpty( $record['display']['url'] );
+			}
+		}
 	}
 }

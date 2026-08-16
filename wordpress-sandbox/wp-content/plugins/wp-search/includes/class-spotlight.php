@@ -48,7 +48,7 @@ class Spotlight {
 	 * @since 1.0.0
 	 * @param array<mixed> $records Spotlight records from all providers.
 	 * @param string       $query   Raw search query.
-	 * @return array<mixed> Response: {_meta, users, plugins, options, settings}.
+	 * @return array<mixed> Response: {_meta, facets: {users, plugins, options, settings}}.
 	 */
 	public static function build_response( array $records, string $query ): array {
 		$term    = self::normalize( $query );
@@ -65,9 +65,9 @@ class Spotlight {
 
 		$facets = self::group_and_sort( $matched );
 
-		return array_merge(
-			array( '_meta' => self::build_meta( $facets ) ),
-			$facets
+		return array(
+			'_meta'  => self::build_meta( $facets ),
+			'facets' => $facets,
 		);
 	}
 

@@ -189,15 +189,15 @@ class REST_Controller {
 	 * @return array<mixed>
 	 */
 	private static function flatten_spotlight_facets( array $response, string $query ): array {
-		$results  = array();
-		$facets   = Spotlight::FACET_ORDER;
+		$results = array();
+		$facets  = Spotlight::FACET_ORDER;
 
 		foreach ( $facets as $facet ) {
-			if ( empty( $response[ $facet ] ) || ! is_array( $response[ $facet ] ) ) {
+			if ( empty( $response['facets'][ $facet ] ) || ! is_array( $response['facets'][ $facet ] ) ) {
 				continue;
 			}
 
-			foreach ( $response[ $facet ] as $record ) {
+			foreach ( $response['facets'][ $facet ] as $record ) {
 				if ( ! is_array( $record ) || empty( $record['display'] ) ) {
 					continue;
 				}
@@ -219,8 +219,7 @@ class REST_Controller {
 	/**
 	 * Return the grouped Spotlight response for the /spotlight route.
 	 *
-	 * Adds per-facet navigation URLs so consumers can deep-link to the
-	 * relevant admin list screens.
+	 * Response shape is `{ _meta, facets: { users, plugins, options, settings } }`.
 	 *
 	 * @since 1.0.0
 	 * @param \WP_REST_Request $request REST request.
@@ -231,19 +230,7 @@ class REST_Controller {
 
 		$response = Spotlight::build_response( $this->collect_spotlight_records(), $query );
 
-		return rest_ensure_response(
-			array_merge(
-				$response,
-				array(
-					'navigation' => array(
-						'users'    => admin_url( 'users.php' ),
-						'plugins'  => admin_url( 'plugins.php' ),
-						'options'  => admin_url( 'options-general.php' ),
-						'settings' => admin_url( 'options-general.php' ),
-					),
-				)
-			)
-		);
+		return rest_ensure_response( $response );
 	}
 
 	/**

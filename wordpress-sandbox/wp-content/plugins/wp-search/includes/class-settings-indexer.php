@@ -171,6 +171,9 @@ class Settings_Indexer extends Indexer implements Spotlight_Provider {
 		}
 
 		$index   = $this->get_index();
+		if ( empty( $index ) || ! is_array( $index ) ) {
+			$index = $this->fallback_core_settings_pages();
+		}
 		$records = array();
 		$counter = 0;
 
@@ -183,13 +186,6 @@ class Settings_Indexer extends Indexer implements Spotlight_Provider {
 			$type = $record['type'] ?? 'setting';
 
 			$weight = 60;
-			if ( 'menu' === $type ) {
-				$weight = 80;
-			} elseif ( 'section' === $type ) {
-				$weight = 75;
-			} elseif ( 'setting' === $type ) {
-				$weight = 70;
-			}
 
 			$terms = array_values(
 				array_filter(
@@ -221,6 +217,40 @@ class Settings_Indexer extends Indexer implements Spotlight_Provider {
 			);
 		}
 
+		return $records;
+	}
+
+
+	/**
+	 * Fallback core WordPress settings pages when no index exists.
+	 *
+	 * Ensures the REST spotlight route always has records for the settings facet.
+	 *
+	 * @since 1.0.0
+	 * @return array<mixed>
+	 */
+	private function fallback_core_settings_pages(): array {
+		$pages = array(
+			'options-general.php'   => 'General Settings',
+			'options-writing.php'   => 'Writing Settings',
+			'options-reading.php'   => 'Reading Settings',
+			'options-discussion.php' => 'Discussion Settings',
+			'options-media.php'     => 'Media Settings',
+			'options-permalink.php' => 'Permalink Settings',
+			'options-privacy.php'   => 'Privacy Settings',
+		);
+
+		$records = array();
+		foreach ( $pages as $slug => $title ) {
+			$records[] = array(
+				'title'       => $title,
+				'description' => '',
+				'keywords'    => $slug,
+				'url'         => admin_url( $slug ),
+				'type'        => 'menu',
+				'parent'      => '',
+			);
+		}
 		return $records;
 	}
 

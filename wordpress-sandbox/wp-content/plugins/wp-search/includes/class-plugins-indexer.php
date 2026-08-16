@@ -110,11 +110,7 @@ $results[] = $this->normalize_record(
 			require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		}
 
-		$plugins        = get_plugins();
-		$update_transient = get_site_transient( 'update_plugins' );
-		$updates        = ( isset( $update_transient->response ) && is_array( $update_transient->response ) )
-			? $update_transient->response
-			: array();
+		$plugins = get_plugins();
 
 		$records = array();
 		$index   = 0;
@@ -123,29 +119,15 @@ $results[] = $this->normalize_record(
 			$index++;
 
 			$name        = $plugin_data['Name'] ?? '';
-			$slug        = $plugin_file;
 			$description = wp_strip_all_tags( $plugin_data['Description'] ?? '' );
 			$author      = wp_strip_all_tags( $plugin_data['Author'] ?? '' );
-			$version     = $plugin_data['Version'] ?? '';
 			$active      = is_plugin_active( $plugin_file );
-
-			$update = isset( $updates[ $plugin_file ] ) ? $updates[ $plugin_file ] : null;
-			$new_version = ( is_object( $update ) && isset( $update->new_version ) )
-				? $update->new_version
-				: null;
-
-			$weight = $active ? 80 : 60;
-			if ( null !== $new_version ) {
-				$weight += 10;
-			}
 
 			$terms = array_unique(
 				array_filter(
 					array(
 						$name,
-						$slug,
 						$author,
-						$version,
 					)
 				)
 			);
@@ -158,17 +140,12 @@ $results[] = $this->normalize_record(
 				'facet'   => self::SOURCE,
 				'search'  => array(
 					'terms'  => array_map( 'strval', $terms ),
-					'weight' => $weight,
+					'weight' => $active ? 80 : 50,
 				),
 				'display' => array(
-					'name'            => $name,
-					'slug'            => $slug,
-					'active'          => $active,
-					'version'         => $version,
-					'updateAvailable' => $new_version,
-					'author'          => $author,
-					'description'     => $description,
-					'url'             => admin_url( 'plugins.php' ),
+					'name'   => $name,
+					'status' => $active ? 'active' : 'inactive',
+					'url'    => admin_url( 'plugins.php' ),
 				),
 			);
 		}

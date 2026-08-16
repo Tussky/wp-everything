@@ -278,10 +278,10 @@ class Options_Indexer_Tests extends Test_Case {
 
 		$response = Spotlight::build_response( $records, 'permalink' );
 
-		$this->assertArrayHasKey( 'options', $response );
-		$this->assertNotEmpty( $response['options'] );
+		$this->assertArrayHasKey( 'options', $response['facets'] );
+		$this->assertNotEmpty( $response['facets']['options'] );
 
-		foreach ( $response['options'] as $record ) {
+		foreach ( $response['facets']['options'] as $record ) {
 			$this->assertSame( 'options', $record['facet'] );
 			$this->assertNotEmpty( $record['display']['name'] );
 			$this->assertNotEmpty( $record['display']['url'] );

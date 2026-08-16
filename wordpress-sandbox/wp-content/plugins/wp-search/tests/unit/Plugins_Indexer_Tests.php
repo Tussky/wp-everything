@@ -174,12 +174,10 @@ class Plugins_Indexer_Tests extends Test_Case {
 					'Name'        => 'Hello Dolly',
 					'Description' => 'A classic WordPress plugin.',
 					'Author'      => 'Matt Mullenweg',
-					'Version'     => '1.7.2',
-				),
+									),
 			)
 		);
 		Functions\when( 'is_plugin_active' )->justReturn( true );
-		Functions\when( 'get_site_transient' )->justReturn( false );
 
 		$indexer = new Plugins_Indexer();
 		$records = $indexer->get_records();
@@ -192,7 +190,7 @@ class Plugins_Indexer_Tests extends Test_Case {
 		$this->assertArrayHasKey( 'search', $record );
 		$this->assertArrayHasKey( 'display', $record );
 		$this->assertSame( 'Hello Dolly', $record['display']['name'] );
-		$this->assertTrue( $record['display']['active'] );
+		$this->assertSame( 'active', $record['display']['status'] );
 		$this->assertArrayHasKey( 'url', $record['display'] );
 		$this->assertNotEmpty( $record['display']['url'] );
 	}
