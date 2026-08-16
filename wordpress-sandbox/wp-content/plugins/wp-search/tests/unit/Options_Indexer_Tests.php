@@ -9,6 +9,7 @@ namespace WP_Search\Tests;
 
 use Brain\Monkey\Functions;
 use WP_Search\Options_Indexer;
+use WP_Search\Spotlight;
 
 /**
  * Tests for Options_Indexer.
@@ -246,5 +247,45 @@ class Options_Indexer_Tests extends Test_Case {
 	public function test_reindex_returns_zero(): void {
 		$indexer = new Options_Indexer();
 		$this->assertSame( 0, $indexer->reindex() );
+	}
+
+	/**
+	 * Searching for "permalink" via the Spotlight engine should produce
+	 * records with a non-empty title (display.name), a non-empty url
+	 * (display.url → deep link), and source === options (facet).
+	 *
+	 * This mirrors the REST controller data path: get_records() →
+	 * Spotlight::build_response() → flatten.
+	 *
+	 * @return void
+	 */
+	public function test_permalink_search_records_have_title_url_and_source(): void {
+		self::$fake_rows = array(
+			(object) array(
+				'option_name'  => 'permalink_structure',
+				'option_value' => '/%postname%/',
+				'autoload'     => 'yes',
+			),
+			(object) array(
+				'option_name'  => 'blogname',
+				'option_value' => 'My Site',
+				'autoload'     => 'yes',
+			),
+		);
+
+		$indexer = new Options_Indexer();
+		$records = $indexer->get_records();
+
+		$response = Spotlight::build_response( $records, 'permalink' );
+
+		$this->assertArrayHasKey( 'options', $response );
+		$this->assertNotEmpty( $response['options'] );
+
+		foreach ( $response['options'] as $record ) {
+			$this->assertSame( 'options', $record['facet'] );
+			$this->assertNotEmpty( $record['display']['name'] );
+			$this->assertNotEmpty( $record['display']['url'] );
+			$this->assertStringContainsString( 'options-permalink.php', $record['display']['url'] );
+		}
 	}
 }

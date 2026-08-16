@@ -216,29 +216,25 @@ class REST_Controller {
 	 * @return array<Indexer>
 	 */
 	protected function get_indexers(): array {
-		$indexers = array();
-		$indexer_classes = array(
-			'Settings_Indexer',
-			'Users_Indexer',
-			'Plugins_Indexer',
-			'Options_Indexer',
-			'Menus_Indexer',
-			'Posts_Indexer',
-			'Products_Indexer',
+		$factories = array(
+			static fn() => new Settings_Indexer(),
+			static fn() => new Users_Indexer(),
+			static fn() => new Plugins_Indexer(),
+			static fn() => new Options_Indexer(),
+			static fn() => new Menus_Indexer(),
+			static fn() => new Posts_Indexer(),
+			static fn() => new Products_Indexer(),
 		);
-		
-		foreach ( $indexer_classes as $class ) {
+
+		$indexers = array();
+		foreach ( $factories as $factory ) {
 			try {
-				$full_class = 'WP_Search\\' . $class;
-				if ( class_exists( $full_class ) ) {
-					$indexers[] = new $full_class();
-				}
+				$indexers[] = $factory();
 			} catch ( \Throwable $e ) {
-				error_log( 'wp-search: Failed to instantiate indexer ' . $class . ': ' . $e->getMessage() );
-				continue;
+				error_log( 'wp-search: Failed to instantiate indexer: ' . $e->getMessage() );
 			}
 		}
-		
+
 		return $indexers;
 	}
 }

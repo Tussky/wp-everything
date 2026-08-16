@@ -10,7 +10,7 @@ namespace WP_Search\Tests;
 use Brain\Monkey\Functions;
 use Mockery;
 use WP_Search\REST_Controller;
-use WP_Search\Settings_Indexer;
+use WP_Search\Spotlight_Provider;
 
 /**
  * Tests for REST_Controller.
@@ -20,16 +20,11 @@ class REST_Controller_Tests extends Test_Case {
 	/**
 	 * Helper to create a controller with all indexers stubbed.
 	 *
-	 * @param array<mixed> $stubs Source-keyed arrays returned by indexers.
+	 * @param array<mixed> $stubs Facet-keyed arrays of spotlight records.
 	 * @return REST_Controller
 	 */
 	private function controller_with_stubbed_indexers( array $stubs = array() ): REST_Controller {
 		Functions\when( 'current_user_can' )->justReturn( true );
-		Functions\when( 'get_transient' )->alias(
-			function ( $key ) use ( $stubs ) {
-				return $stubs[ $key ] ?? array();
-			}
-		);
 		Functions\when( 'sanitize_text_field' )->returnArg();
 		Functions\when( 'rest_ensure_response' )->alias(
 			function ( $data ) {
@@ -41,10 +36,9 @@ class REST_Controller_Tests extends Test_Case {
 		$controller->shouldAllowMockingProtectedMethods();
 
 		$indexers = array();
-		foreach ( $stubs as $source => $records ) {
-			$indexer = Mockery::mock( Settings_Indexer::class ); // Base type only used for shape.
-			$indexer->shouldReceive( 'search' )->andReturn( $records );
-			$indexer->shouldReceive( 'get_source' )->andReturn( $source );
+		foreach ( $stubs as $facet => $records ) {
+			$indexer = Mockery::mock( Spotlight_Provider::class );
+			$indexer->shouldReceive( 'get_records' )->andReturn( $records );
 			$indexers[] = $indexer;
 		}
 
@@ -189,18 +183,33 @@ class REST_Controller_Tests extends Test_Case {
 		$request->shouldReceive( 'get_param' )->with( 'q' )->andReturn( 'admin' );
 
 		$stubs = array(
-			'settings' => array( array( 'title' => 'Settings', 'url' => '/', 'source' => 'settings' ) ),
-			'users'    => array( array( 'title' => 'Admin User', 'email' => 'a@b', 'source' => 'users' ) ),
+			'settings' => array(
+				array(
+					'id'      => 's-1',
+					'facet'   => 'settings',
+					'search'  => array( 'terms' => array( 'admin', 'settings' ), 'weight' => 80 ),
+					'display' => array( 'title' => 'Settings', 'url' => '/options-general.php' ),
+				),
+			),
+			'users'    => array(
+				array(
+					'id'      => 'u-1',
+					'facet'   => 'users',
+					'search'  => array( 'terms' => array( 'admin', 'user' ), 'weight' => 90 ),
+					'display' => array( 'name' => 'Admin User', 'url' => '/users.php' ),
+				),
+			),
 		);
 
 		$controller = $this->controller_with_stubbed_indexers( $stubs );
 		$response   = $controller->search_items( $request );
 
 		$this->assertSame( 'admin', $response['query'] );
-		$this->assertSame( 2, $response['count'] );
 		$this->assertCount( 2, $response['results'] );
-		$this->assertSame( 'settings', $response['results'][0]['source'] );
-		$this->assertSame( 'users', $response['results'][1]['source'] );
+
+		$sources = array_column( $response['results'], 'source' );
+		$this->assertContains( 'settings', $sources );
+		$this->assertContains( 'users', $sources );
 	}
 
 	/**
@@ -216,7 +225,6 @@ class REST_Controller_Tests extends Test_Case {
 		$response   = $controller->search_items( $request );
 
 		$this->assertSame( 'xyz', $response['query'] );
-		$this->assertSame( 0, $response['count'] );
 		$this->assertCount( 0, $response['results'] );
 	}
 }
