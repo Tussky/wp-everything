@@ -120,7 +120,6 @@ class Settings_Indexer extends Indexer {
 	 */
 	public function reindex(): int {
 		$index = array_merge(
-			$this->collect_menu_items(),
 			$this->collect_settings_sections(),
 			$this->collect_registered_settings()
 		);

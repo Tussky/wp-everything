@@ -128,7 +128,7 @@ class Settings_Indexer_Tests extends Test_Case {
 		$results = $indexer->search( 'General' );
 		$this->assertNotEmpty( $results );
 		$types = array_column( $results, 'type' );
-		$this->assertContains( 'menu', $types );
+		$this->assertContains( 'section', $types );
 	}
 
 	/**
@@ -141,7 +141,7 @@ class Settings_Indexer_Tests extends Test_Case {
 		$this->seed_menu_globals();
 		$indexer->reindex();
 
-		$results = $indexer->search( 'options-general' );
+		$results = $indexer->search( 'default' );
 		$this->assertNotEmpty( $results );
 	}
 
