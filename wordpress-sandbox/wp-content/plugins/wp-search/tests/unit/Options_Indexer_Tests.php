@@ -34,6 +34,7 @@ class Options_Indexer_Tests extends Test_Case {
 		Functions\when( 'wp_strip_all_tags' )->returnArg();
 		Functions\when( 'is_serialized_string' )->justReturn( false );
 		Functions\when( 'sanitize_text_field' )->returnArg();
+		Functions\when( 'admin_url' )->returnArg();
 
 		self::$fake_rows = array();
 
@@ -121,6 +122,7 @@ class Options_Indexer_Tests extends Test_Case {
 		$this->assertSame( 'Northwind Goods', $record['display']['value'] );
 		$this->assertSame( 'yes', $record['display']['autoload'] );
 		$this->assertFalse( $record['display']['protected'] );
+		$this->assertStringContainsString( 'options-general.php', $record['display']['url'] );
 	}
 
 	/**

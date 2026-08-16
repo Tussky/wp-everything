@@ -18,7 +18,8 @@
 		content:  { label: 'Posts',   icon: 'dashicons-admin-post',    badgeClass: 'wp-search-badge--posts' },
 		users:    { label: 'Users',   icon: 'dashicons-admin-users',   badgeClass: 'wp-search-badge--users' },
 		plugins:  { label: 'Plugins', icon: 'dashicons-admin-plugins', badgeClass: 'wp-search-badge--plugins' },
-		settings: { label: 'Options', icon: 'dashicons-admin-generic', badgeClass: 'wp-search-badge--options' },
+		settings: { label: 'Settings pages', icon: 'dashicons-admin-generic', badgeClass: 'wp-search-badge--options' },
+		options:  { label: 'Options', icon: 'dashicons-admin-settings', badgeClass: 'wp-search-badge--options' },
 		menus:    { label: 'Menus',   icon: 'dashicons-menu',           badgeClass: 'wp-search-badge--menus' },
 		products: { label: 'Products',icon: 'dashicons-cart',           badgeClass: 'wp-search-badge--products' },
 	};
@@ -28,7 +29,7 @@
 	 *
 	 * @type {Array<string>}
 	 */
-	const SOURCE_ORDER = ['content', 'users', 'plugins', 'settings', 'menus', 'products'];
+	const SOURCE_ORDER = ['content', 'users', 'plugins', 'settings', 'options', 'menus', 'products'];
 
 	/**
 	 * REST client for search requests.

@@ -47,6 +47,7 @@ function wp_search_load(): void {
 		'interface-spotlight-provider.php',
 		'class-indexer.php',
 		'interface-spotlight-provider.php',
+		'class-spotlight.php',
 		'class-settings-indexer.php',
 		'class-users-indexer.php',
 		'class-plugins-indexer.php',

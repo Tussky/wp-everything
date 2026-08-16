@@ -153,6 +153,22 @@ class Options_Indexer extends Indexer implements Spotlight_Provider {
 		$records = array();
 		$index   = 0;
 
+		$admin_hrefs = array(
+			'siteurl'                     => 'options-general.php',
+			'home'                        => 'options-general.php',
+			'blogname'                    => 'options-general.php',
+			'admin_email'                 => 'options-general.php',
+			'active_plugins'              => 'plugins.php',
+			'woocommerce_stripe_settings' => 'admin.php?page=wc-settings&tab=checkout&section=stripe',
+			'akismet_api_key'             => 'admin.php?page=akismet-key-config',
+			'permalink_structure'         => 'options-permalink.php',
+			'woocommerce_currency'        => 'admin.php?page=wc-settings&tab=general',
+			'users_can_register'          => 'options-general.php#users_can_register',
+			'timezone_string'             => 'options-general.php',
+			'template'                    => 'themes.php',
+			'stylesheet'                  => 'themes.php',
+		);
+
 		foreach ( $by_name as $name => $row ) {
 			$index++;
 			$known     = $this->known_options[ $name ] ?? array(
@@ -182,13 +198,14 @@ class Options_Indexer extends Indexer implements Spotlight_Provider {
 					'terms'  => array_values( array_filter( array_unique( $terms ) ) ),
 					'weight' => (int) $known['weight'],
 				),
-				'display' => array(
-					'name'      => $name,
-					'value'     => $value,
-					'autoload'  => $this->normalize_autoload( $row->autoload ?? 'yes' ),
-					'protected' => $protected,
-					'explainer' => $known['explainer'],
-				),
+'display' => array(
+				'name'      => $name,
+				'value'     => $value,
+				'autoload'  => $this->normalize_autoload( $row->autoload ?? 'yes' ),
+				'protected' => $protected,
+				'explainer' => $known['explainer'],
+				'url'       => admin_url( $admin_hrefs[ $name ] ?? '' ),
+			),
 			);
 		}
 
