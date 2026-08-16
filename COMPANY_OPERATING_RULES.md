@@ -119,6 +119,58 @@ when one of these is true:
 > `CTO_HIRE_ANNOUNCEMENT.md` and `SENIOR_DEV_HIRE_ANNOUNCEMENT.md`. The gate
 > blocked accountability without blocking work — the worst of both.
 
+## Rule 8 — Code that does not boot does not get pushed
+
+Two checks now run on every push and every pull request, defined in
+`.github/workflows/phpunit.yml`:
+
+| Check | What it proves |
+|---|---|
+| `Run wp-search unit tests` | Every PHP file parses, every class links, and the 44-test suite passes. |
+| `WordPress boots with wp-search active` | A real WordPress install activates the plugin and serves `/`, `/wp-login.php`, `/wp-admin/` and the REST root with no PHP error, under `WP_DEBUG`. |
+
+The second one is the one that matters. **Unit tests with a mocked WordPress can
+pass on a plugin that takes the site down** — the mocks are the thing that hides
+it. Only a real boot proves the site runs.
+
+Before you push, the `pre-push` hook in `.githooks/` runs the syntax check, the
+class-link check and the unit tests locally, and refuses the push if any fail.
+Enable it once per clone:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+**`--no-verify` is forbidden.** If the hook blocks you, the code is broken; that
+is the hook working. Skipping it does not make the code work, it just moves the
+red X to CI, where it is public and where the branch is already poisoned for
+everyone else.
+
+**When CI is red, the branch is broken and nothing else proceeds.** Not the next
+subtask, not documentation, not a report. Fix it or revert it — those are the
+only two moves. A red branch is the one condition under which Rule 2's WIP limit
+does not apply: fixing it is never "a third issue in flight".
+
+> **Evidence.** `bd6a4e1` (IA-158) declared `implements Spotlight_Provider` on
+> two classes and never wrote the interface. `Users_Indexer` loads on
+> `plugins_loaded`, so WordPress fatally errored on **every request, admin and
+> front-end**, from 2026-08-12 until 2026-08-16. Three IA-162 commits and a
+> merge landed on top of it, including a thirty-line CHANGELOG analysis of a
+> REST nonce — written about code that could not execute, on a branch where
+> WordPress would not boot. Nobody loaded a page for four days.
+>
+> The test suite already caught it: `tests/bootstrap.php` loads the same file
+> list and failed at bootstrap with the identical error, in under a second. It
+> was never run. And the CI workflow added in `100efcb` only watched `main`,
+> while all nine commits in that window went straight to `wordpress-production`
+> — so the net existed and the work happened entirely outside it.
+>
+> Rules 1 and 3 were both in force the whole time. They failed because no
+> document in this repository named a command to run: a grep for `phpunit`,
+> `composer` or `vendor/bin` across every `.md` file returned zero matches. An
+> agent that wants to obey "close on pasted command output" has to be told
+> which command. That is what this rule and the block in `AGENTS.md` fix.
+
 ---
 
 ## Issue lifetimes
@@ -150,6 +202,7 @@ Features verified working this week:  <n>
 Lines shipped / lines deleted:        <a> / <b>
 Dollars spent / features verified:    $<x>
 Issues hung (expired with no output): <n>
+CI red on wordpress-production for:   <hours>
 In flight now (max 2):                <ids>
 Blocked, owner Isaac:                 <ids + one-line unblock action>
 ```
@@ -159,10 +212,17 @@ repeating 2026-08-10. Stop and escalate.
 
 ---
 
-## Current state — 2026-08-12
+## Current state — 2026-08-16
 
-- **Live work:** `CEO_WORK_ORDER_IA-126.md` — four defects in wp→search. This is
-  the *only* live work. Two of the four make the plugin non-functional.
+- **Live work:** assigned by Isaac directly. `CEO_WORK_ORDER_IA-126.md` was
+  deleted in `1508268` — if a document still points you at it, that pointer is
+  stale. **If you have no assigned issue, stop and ask. Do not select your own.**
+- **CI:** two required checks on `main` and `wordpress-production`, see Rule 8.
+  Server-side branch protection is **not yet enabled** — the repository is
+  private on a free GitHub account, which gates both branch protection and
+  rulesets. Until Isaac makes the repository public or upgrades the plan, the
+  `.githooks/pre-push` hook and Rule 8 are the whole enforcement. That means
+  the rule is currently load-bearing on you following it.
 - **Archived:** eight obsolete documents in `/archive/` — see its README.
 - **Org chart (resolved 2026-08-12 by Isaac):** CEO **Actinolite**, CTO
   **Bayldonite**, coders report to Bayldonite. The earlier CTO names — Lukas

@@ -7,7 +7,7 @@ You are working inside an AI Labs Cohort #2 Paperclip hackathon participant comp
 **`COMPANY_OPERATING_RULES.md` is binding and overrides any plan, delegation
 document, or issue body that conflicts with it.** Read it before starting work.
 
-The seven rules in short form:
+The eight rules in short form:
 
 1. Nothing enters docs / assets / release / audit until a human has confirmed the
    feature works in the sandbox.
@@ -23,12 +23,61 @@ The seven rules in short form:
    **obsolete — target deleted in `<sha>`**, never as `done`.
 7. Default to execute. No approval gates. Escalate only on the five named
    triggers in the rules file.
+8. Code that does not boot does not get pushed. Both CI checks must be green.
+   `--no-verify` is forbidden. See the block below — it is not optional.
 
 **`/archive/` contains obsolete plans for two deleted plugins. Nothing in it is a
 live instruction.** If a pointer sends you there, you followed a stale reference —
 stop and re-read this file.
 
-**Live work is `CEO_WORK_ORDER_IA-126.md` and nothing else.**
+**Live work is assigned to you by Isaac.** If you have no assigned issue, stop
+and ask. Do not select your own. (`CEO_WORK_ORDER_IA-126.md` was deleted in
+`1508268`; anything still pointing at it is stale.)
+
+## Verify before you push — the commands
+
+This section exists because until 2026-08-16 no document in this repository
+named a single command to run, while Rule 3 required pasting command output.
+These are the commands. Run them, paste the real output, ugly parts included.
+
+**Once per clone**, enable the pre-push hook and install test dependencies:
+
+```bash
+git config core.hooksPath .githooks
+cd wordpress-sandbox/wp-content/plugins/wp-search && composer install
+```
+
+**Before every commit**, from the plugin directory:
+
+```bash
+# 1. Syntax — every PHP file parses
+find . -path ./vendor -prune -o -name '*.php' -print | xargs -n1 php -l
+
+# 2. Unit tests — expect: OK (44 tests, 88 assertions)
+vendor/bin/phpunit
+```
+
+**Before you close an issue**, prove it in the sandbox. Unit tests use a mocked
+WordPress and can pass on a plugin that takes the site down — that has happened
+here, and it cost four days:
+
+```bash
+cat > wordpress-sandbox/request.json <<'JSON'
+{"action":"wp","slug":"isaac-anderson","reason":"Verify wp-search loads",
+ "wpArgs":["plugin","list","--name=wp-search","--field=status"]}
+JSON
+# wait up to a minute, then:
+cat wordpress-sandbox/result.json     # expect: active
+```
+
+**The push gate.** `.githooks/pre-push` runs the syntax check, a class-link
+check and the unit tests, and refuses the push if any fail. GitHub Actions then
+runs both checks again plus a real WordPress boot — `Run wp-search unit tests`
+and `WordPress boots with wp-search active`. If either is red, the branch is
+broken: fix it or revert it, and start nothing else until it is green.
+
+Do not pass `--no-verify`. If the hook blocks you, the code is broken and the
+hook is working.
 
 ## Role model
 
