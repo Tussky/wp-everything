@@ -137,12 +137,11 @@ class REST_Controller {
 	}
 
 	/**
-	 * Search across the four spotlight facets (users, plugins, options, settings).
+	 * Search across the spotlight facets and return flat results for the admin frontend.
 	 *
 	 * Each Spotlight_Provider returns its full record set; the Spotlight engine
-	 * matches against `search.terms` only and ranks by `search.weight`. The
-	 * response is grouped into facet arrays with a `_meta` block, matching the
-	 * spotlight-data.json shape.
+	 * matches against `search.terms` and ranks by `search.weight`. The response is
+	 * then flattened into a `{results, query}` shape consumed by admin.js.
 	 *
 	 * @since 1.0.0
 	 * @param \WP_REST_Request $request REST request.
@@ -154,7 +153,7 @@ class REST_Controller {
 
 		foreach ( $this->get_indexers() as $indexer ) {
 			if ( ! $indexer instanceof Spotlight_Provider ) {
-				continue; // Non-spotlight indexers (menus/posts/products) are out of scope.
+				continue;
 			}
 			try {
 				$records = array_merge( $records, $indexer->get_records() );
@@ -166,7 +165,48 @@ class REST_Controller {
 
 		$response = Spotlight::build_response( $records, $query );
 
-		return rest_ensure_response( $response );
+		return rest_ensure_response(
+			array(
+				'results' => self::flatten_spotlight_facets( $response, $query ),
+				'query'   => $query,
+			)
+		);
+	}
+
+	/**
+	 * Flatten a facet-grouped Spotlight response into a flat result list.
+	 *
+	 * @since 1.0.0
+	 * @param array<mixed> $response Spotlight response with _meta + facets.
+	 * @param string       $query    Original search query.
+	 * @return array<mixed>
+	 */
+	private static function flatten_spotlight_facets( array $response, string $query ): array {
+		$results  = array();
+		$facets   = Spotlight::FACET_ORDER;
+
+		foreach ( $facets as $facet ) {
+			if ( empty( $response[ $facet ] ) || ! is_array( $response[ $facet ] ) ) {
+				continue;
+			}
+
+			foreach ( $response[ $facet ] as $record ) {
+				if ( ! is_array( $record ) || empty( $record['display'] ) ) {
+					continue;
+				}
+
+				$display = $record['display'];
+
+				$results[] = array(
+					'source'      => $facet,
+					'url'         => $display['url'] ?? $display['edit_url'] ?? $display['editURL'] ?? '',
+					'title'       => $display['title'] ?? $display['displayName'] ?? $display['display_name'] ?? $display['name'] ?? $display['username'] ?? '',
+					'description' => $display['description'] ?? $display['desc'] ?? '',
+				);
+			}
+		}
+
+		return $results;
 	}
 
 	/**
