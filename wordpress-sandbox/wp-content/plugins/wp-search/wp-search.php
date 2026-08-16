@@ -106,6 +106,7 @@ add_action( 'plugins_loaded', 'wp_search_load' );
  */
 function wp_search_activate(): void {
 	$files = array(
+		'interface-spotlight-provider.php',
 		'class-indexer.php',
 		'class-settings-indexer.php',
 		'class-menus-indexer.php',
@@ -137,6 +138,7 @@ register_activation_hook( WP_SEARCH_PLUGIN_FILE, 'wp_search_activate' );
  */
 function wp_search_deactivate(): void {
 	$files = array(
+		'interface-spotlight-provider.php',
 		'class-indexer.php',
 		'class-settings-indexer.php',
 		'class-menus-indexer.php',
