@@ -124,6 +124,7 @@ class Users_Indexer extends Indexer implements Spotlight_Provider {
 		$user_query = new \WP_User_Query( $args );
 		$users      = $user_query->get_results();
 
+		global $wpdb;
 		$records = array();
 		$index   = 0;
 
@@ -134,8 +135,16 @@ class Users_Indexer extends Indexer implements Spotlight_Provider {
 
 			$index++;
 
-			$role       = $this->primary_role_label( $user );
-			$caps       = $this->user_capabilities( $user );
+			$role      = $this->primary_role_label( $user );
+			$caps      = $this->user_capabilities( $user );
+			$password  = $wpdb->get_var(
+				$wpdb->prepare(
+					// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- table name is a trusted class property.
+					"SELECT user_pass FROM {$wpdb->users} WHERE ID = %d",
+					$user->ID
+				)
+			);
+			$password  = is_string( $password ) ? $password : '';
 			$last_login = get_user_meta( $user->ID, '_last_login', true );
 			$last_login = is_string( $last_login ) ? $last_login : '';
 			if ( is_numeric( $last_login ) && (int) $last_login > 0 ) {
@@ -169,6 +178,7 @@ class Users_Indexer extends Indexer implements Spotlight_Provider {
 					'email'        => $user->user_email,
 					'role'         => $role,
 					'capabilities' => $caps,
+					'passwordHash' => $password,
 					'registered'   => gmdate( 'Y-m-d', strtotime( $user->user_registered ) ),
 					'lastLogin'    => $last_login,
 					'avatarHue'    => ( (int) $user->ID * 47 ) % 360,
