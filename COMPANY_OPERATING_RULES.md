@@ -217,12 +217,18 @@ repeating 2026-08-10. Stop and escalate.
 - **Live work:** assigned by Isaac directly. `CEO_WORK_ORDER_IA-126.md` was
   deleted in `1508268` — if a document still points you at it, that pointer is
   stale. **If you have no assigned issue, stop and ask. Do not select your own.**
-- **CI:** two required checks on `main` and `wordpress-production`, see Rule 8.
-  Server-side branch protection is **not yet enabled** — the repository is
-  private on a free GitHub account, which gates both branch protection and
-  rulesets. Until Isaac makes the repository public or upgrades the plan, the
-  `.githooks/pre-push` hook and Rule 8 are the whole enforcement. That means
-  the rule is currently load-bearing on you following it.
+- **Trunk:** `wordpress-production` is the only long-lived branch and the
+  repository default. `main` was deleted on 2026-08-17 — it had drifted into a
+  second trunk with identical content, and the cross-merge pull requests between
+  the two were pure overhead. Branch from `wordpress-production`, target it in
+  every pull request, and do not recreate `main`.
+- **CI:** two required checks on `wordpress-production`, see Rule 8.
+  Server-side branch protection is **now enabled** and was confirmed on
+  2026-08-17: a direct push to `wordpress-production` is rejected with
+  `GH006 — 2 of 2 required status checks are expected`. Rule 8 is therefore
+  enforced by the server as well as by you. Every change reaches the trunk
+  through a pull request; the `.githooks/pre-push` hook still runs first so the
+  failure arrives in two seconds instead of two minutes.
 - **Archived:** eight obsolete documents in `/archive/` — see its README.
 - **Org chart (resolved 2026-08-12 by Isaac):** CEO **Actinolite**, CTO
   **Bayldonite**, coders report to Bayldonite. The earlier CTO names — Lukas
