@@ -27,6 +27,7 @@ class Plugins_Indexer_Tests extends Test_Case {
 		Functions\when( 'admin_url' )->justReturn( 'https://example.com/wp-admin/plugins.php' );
 		Functions\when( 'is_plugin_active' )->justReturn( true );
 		Functions\when( 'get_plugins' )->justReturn( array() );
+		Functions\when( 'get_site_transient' )->justReturn( false );
 	}
 
 	/**
@@ -190,7 +191,7 @@ class Plugins_Indexer_Tests extends Test_Case {
 		$this->assertArrayHasKey( 'search', $record );
 		$this->assertArrayHasKey( 'display', $record );
 		$this->assertSame( 'Hello Dolly', $record['display']['name'] );
-		$this->assertSame( 'active', $record['display']['status'] );
+		$this->assertTrue( $record['display']['active'] );
 		$this->assertArrayHasKey( 'url', $record['display'] );
 		$this->assertNotEmpty( $record['display']['url'] );
 	}

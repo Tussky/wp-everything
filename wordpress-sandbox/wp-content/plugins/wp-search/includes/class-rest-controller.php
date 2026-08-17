@@ -83,11 +83,19 @@ class REST_Controller {
 			)
 		);
 
+		$spotlight_args = $args;
+		$spotlight_args['args']['facet'] = array(
+			'required'          => false,
+			'default'           => '',
+			'sanitize_callback' => 'sanitize_text_field',
+			'validate_callback' => array( $this, 'validate_facet' ),
+		);
+
 		register_rest_route(
 			self::NAMESPACE,
 			self::SPOTLIGHT_ROUTE,
 			array_merge(
-				$args,
+				$spotlight_args,
 				array( 'callback' => array( $this, 'get_spotlight_items' ) )
 			)
 		);
@@ -128,6 +136,27 @@ class REST_Controller {
 		}
 
 		return true;
+	}
+
+	/**
+	 * Validate the optional facet filter for the /spotlight route.
+	 *
+	 * Accepts an empty string (no filter) or one of the canonical facets.
+	 *
+	 * @since 1.0.0
+	 * @param string $value Facet value.
+	 * @return true|\WP_Error
+	 */
+	public function validate_facet( string $value ) {
+		if ( '' === $value || in_array( $value, Spotlight::FACET_ORDER, true ) ) {
+			return true;
+		}
+
+		return new \WP_Error(
+			'wp_search_invalid_facet',
+			__( 'Invalid facet. Must be one of: users, plugins, options, settings, or empty.', 'wp-search' ),
+			array( 'status' => 400 )
+		);
 	}
 
 	/**
@@ -221,9 +250,12 @@ class REST_Controller {
 	}
 
 	/**
-	 * Return the grouped Spotlight response for the /spotlight route.
+	 * Return the flat Spotlight payload for the /spotlight route.
 	 *
-	 * Response shape is `{ _meta, facets: { users, plugins, options, settings } }`.
+	 * Response shape is the flat contract object
+	 * `{ users, plugins, options, settings }` — no `_meta`, no `facets`
+	 * wrapper, no `search`/`display` sub-objects. The optional `facet` param
+	 * restricts the payload to one array (others empty) server-side.
 	 *
 	 * @since 1.0.0
 	 * @param \WP_REST_Request $request REST request.
@@ -231,10 +263,26 @@ class REST_Controller {
 	 */
 	public function get_spotlight_items( \WP_REST_Request $request ) {
 		$query = sanitize_text_field( $request->get_param( 'q' ) );
+		$facet = sanitize_text_field( $request->get_param( 'facet' ) );
 
-		$response = Spotlight::build_response( $this->collect_spotlight_records(), $query );
+		$payload = Spotlight::to_flat_payload( $this->collect_spotlight_records(), $query, $facet );
 
-		return rest_ensure_response( $response );
+		return rest_ensure_response( $payload );
+	}
+
+	/**
+	 * Build the flat Spotlight payload for the inline admin bootstrap.
+	 *
+	 * Same builder the /spotlight route uses, exposed for the admin screen so
+	 * `window.WPSS_DATA` carries live data without a separate HTTP round-trip.
+	 *
+	 * @since 1.0.0
+	 * @param string $query Optional search query.
+	 * @param string $facet Optional facet filter.
+	 * @return array<mixed> Flat payload keyed by facet.
+	 */
+	public function build_spotlight_payload( string $query = '', string $facet = '' ): array {
+		return Spotlight::to_flat_payload( $this->collect_spotlight_records(), $query, $facet );
 	}
 
 	/**

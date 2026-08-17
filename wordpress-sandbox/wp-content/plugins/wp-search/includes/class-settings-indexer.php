@@ -50,6 +50,14 @@ class Settings_Indexer extends Indexer implements Spotlight_Provider {
 	const DEFAULT_TTL = 86400;
 
 	/**
+	 * Maximum number of settings records surfaced in the spotlight response.
+	 *
+	 * @since 1.0.0
+	 * @var int
+	 */
+	const RECORDS_LIMIT = 50;
+
+	/**
 	 * Maximum snippet length in bytes.
 	 *
 	 * @since 1.0.0
@@ -348,11 +356,19 @@ class Settings_Indexer extends Indexer implements Spotlight_Provider {
 			return array();
 		}
 
-		$index   = $this->get_index();
+		$index = $this->get_index();
+		if ( ! is_array( $index ) ) {
+			return array();
+		}
+
 		$records = array();
 		$counter = 0;
 
 		foreach ( $index as $record ) {
+			if ( $counter >= self::RECORDS_LIMIT ) {
+				break;
+			}
+
 			if ( ! is_array( $record ) ) {
 				continue;
 			}
@@ -363,21 +379,16 @@ class Settings_Indexer extends Indexer implements Spotlight_Provider {
 			$source_kind = (string) ( $record['sourceKind'] ?? 'core' );
 			$breadcrumb  = is_array( $record['breadcrumb'] ?? null ) ? $record['breadcrumb'] : array( __( 'Settings', 'wp-search' ), (string) ( $record['pageTitle'] ?? '' ) );
 			$language    = (string) ( $record['language'] ?? 'html' );
-			$snippet     = (string) ( $record['snippet'] ?? '' );
-			$url         = (string) ( $record['url'] ?? '' );
-			$title       = (string) ( $record['fieldLabel'] ?? '' );
-			$description = (string) ( $record['pageTitle'] ?? '' );
+			$snippet      = (string) ( $record['snippet'] ?? '' );
+			$snippet_text = wp_strip_all_tags( $snippet );
+			$url          = (string) ( $record['url'] ?? '' );
 
 			$terms = array_filter(
 				array_unique(
-					array(
-						$source,
-						$source_kind,
-						(string) ( $record['pageTitle'] ?? '' ),
-						(string) ( $record['sectionTitle'] ?? '' ),
-						$title,
-						(string) ( $record['fieldId'] ?? '' ),
-						(string) ( $record['snippetText'] ?? '' ),
+					array_merge(
+						array( $source ),
+						$breadcrumb,
+						array( $snippet_text )
 					)
 				)
 			);
@@ -390,15 +401,12 @@ class Settings_Indexer extends Indexer implements Spotlight_Provider {
 					'weight' => (int) ( $record['weight'] ?? 70 ),
 				),
 				'display' => array(
-					'source'      => $source,
-					'sourceKind'  => $source_kind,
-					'breadcrumb'  => $breadcrumb,
-					'language'    => $language,
-					'snippet'     => $snippet,
-					'matchField'  => 'snippet',
-					'url'         => $url,
-					'title'       => $title,
-					'description' => $description,
+					'source'     => $source,
+					'sourceKind' => $source_kind,
+					'breadcrumb' => $breadcrumb,
+					'language'   => $language,
+					'snippet'    => $snippet,
+					'url'        => $url,
 				),
 			);
 		}

@@ -233,12 +233,13 @@ class REST_Controller_Tests extends Test_Case {
 	}
 
 	/**
-	 * The spotlight route should return the four facets grouped under a
-	 * `facets` key, each record carrying a navigation `display.url`.
+	 * The spotlight route should return the flat contract object — four facet
+	 * arrays keyed as { users, plugins, options, settings }, no _meta/facets
+	 * wrapper, every record carrying a non-empty url, and no passwordHash key.
 	 *
 	 * @return void
 	 */
-	public function test_spotlight_items_returns_grouped_facets_with_urls(): void {
+	public function test_spotlight_items_returns_flat_contract(): void {
 		Functions\when( 'admin_url' )->alias(
 			function ( $path ) {
 				return 'https://example.com/wp-admin/' . $path;
@@ -247,6 +248,7 @@ class REST_Controller_Tests extends Test_Case {
 
 		$request = Mockery::mock( 'WP_REST_Request' );
 		$request->shouldReceive( 'get_param' )->with( 'q' )->andReturn( 'admin' );
+		$request->shouldReceive( 'get_param' )->with( 'facet' )->andReturn( '' );
 
 		$stubs = array(
 			'users'    => array(
@@ -254,7 +256,17 @@ class REST_Controller_Tests extends Test_Case {
 					'id'      => 'u-1',
 					'facet'   => 'users',
 					'search'  => array( 'terms' => array( 'admin' ), 'weight' => 100 ),
-					'display' => array( 'displayName' => 'Admin', 'url' => 'https://example.com/wp-admin/user-edit.php?user_id=1' ),
+					'display' => array(
+						'hue'         => 264,
+						'displayName' => 'Admin',
+						'username'    => 'admin',
+						'role'        => 'Administrator',
+						'email'       => 'admin@example.com',
+						'capabilities' => array( 'manage_options' ),
+						'registered'  => '2026-01-01',
+						'lastLogin'   => '',
+						'url'         => 'https://example.com/wp-admin/user-edit.php?user_id=1',
+					),
 				),
 			),
 			'plugins'  => array(
@@ -262,7 +274,16 @@ class REST_Controller_Tests extends Test_Case {
 					'id'      => 'p-1',
 					'facet'   => 'plugins',
 					'search'  => array( 'terms' => array( 'admin' ), 'weight' => 90 ),
-					'display' => array( 'name' => 'Admin', 'url' => 'https://example.com/wp-admin/plugins.php' ),
+					'display' => array(
+						'name'            => 'Admin',
+						'slug'             => 'admin/admin.php',
+						'active'          => true,
+						'version'         => '1.0',
+						'updateAvailable' => null,
+						'author'          => 'Paperclip',
+						'description'     => 'A plugin.',
+						'url'             => 'https://example.com/wp-admin/plugins.php',
+					),
 				),
 			),
 			'options'  => array(
@@ -270,7 +291,14 @@ class REST_Controller_Tests extends Test_Case {
 					'id'      => 'o-1',
 					'facet'   => 'options',
 					'search'  => array( 'terms' => array( 'admin_email' ), 'weight' => 80 ),
-					'display' => array( 'name' => 'admin_email', 'url' => 'https://example.com/wp-admin/options-general.php' ),
+					'display' => array(
+						'name'      => 'admin_email',
+						'value'     => 'admin@example.com',
+						'autoload'  => 'yes',
+						'protected' => false,
+						'explainer' => 'Admin notifications address.',
+						'url'       => 'https://example.com/wp-admin/options-general.php',
+					),
 				),
 			),
 			'settings' => array(
@@ -278,7 +306,14 @@ class REST_Controller_Tests extends Test_Case {
 					'id'      => 's-1',
 					'facet'   => 'settings',
 					'search'  => array( 'terms' => array( 'admin' ), 'weight' => 85 ),
-					'display' => array( 'title' => 'Admin', 'url' => 'https://example.com/wp-admin/options-general.php' ),
+					'display' => array(
+						'source'     => 'WordPress Core',
+						'sourceKind' => 'core',
+						'breadcrumb' => array( 'Settings', 'General' ),
+						'language'   => 'html',
+						'snippet'    => '<label>Site Title</label>',
+						'url'        => 'https://example.com/wp-admin/options-general.php',
+					),
 				),
 			),
 		);
@@ -286,26 +321,46 @@ class REST_Controller_Tests extends Test_Case {
 		$controller = $this->controller_with_stubbed_indexers( $stubs );
 		$response   = $controller->get_spotlight_items( $request );
 
-		$this->assertArrayHasKey( '_meta', $response );
-		$this->assertArrayHasKey( 'facets', $response );
-		$this->assertSame(
-			array( 'users', 'plugins', 'options', 'settings' ),
-			array_keys( $response['facets'] )
-		);
+		// Flat contract: exactly the four facet keys, in order, no wrappers.
+		$this->assertSame( array( 'users', 'plugins', 'options', 'settings' ), array_keys( $response ) );
+		$this->assertArrayNotHasKey( '_meta', $response );
+		$this->assertArrayNotHasKey( 'facets', $response );
 
-		$this->assertSame( array( 'users', 'plugins', 'options', 'settings' ), $response['_meta']['facetOrder'] );
-		$this->assertSame( 1, $response['_meta']['counts']['users'] );
-		$this->assertSame( 1, $response['_meta']['counts']['plugins'] );
-		$this->assertSame( 1, $response['_meta']['counts']['options'] );
-		$this->assertSame( 1, $response['_meta']['counts']['settings'] );
-
-		foreach ( $response['facets'] as $facet => $records ) {
-			$this->assertNotEmpty( $records, "Facet {$facet} should not be empty" );
-			foreach ( $records as $record ) {
-				$this->assertSame( $facet, $record['facet'] );
-				$this->assertArrayHasKey( 'url', $record['display'] );
-				$this->assertNotEmpty( $record['display']['url'] );
+		foreach ( \WP_Search\Spotlight::FACET_ORDER as $facet ) {
+			$this->assertNotEmpty( $response[ $facet ], "Facet {$facet} should not be empty" );
+			foreach ( $response[ $facet ] as $record ) {
+				// No nested internal wrappers leak onto the wire.
+				$this->assertArrayNotHasKey( 'facet', $record );
+				$this->assertArrayNotHasKey( 'search', $record );
+				$this->assertArrayNotHasKey( 'display', $record );
+				$this->assertArrayNotHasKey( 'passwordHash', $record );
+				$this->assertArrayHasKey( 'url', $record );
+				$this->assertNotEmpty( $record['url'] );
 			}
 		}
+
+		// Protected option contract: value null when protected === true.
+		$protected = array(
+			'id'      => 'o-2',
+			'facet'   => 'options',
+			'search'  => array( 'terms' => array( 'secret' ), 'weight' => 70 ),
+			'display' => array(
+				'name'      => 'akismet_api_key',
+				'value'     => null,
+				'autoload'  => 'yes',
+				'protected' => true,
+				'explainer' => 'Akismet key.',
+				'url'       => 'https://example.com/wp-admin/admin.php?page=akismet-key-config',
+			),
+		);
+		$controller2 = $this->controller_with_stubbed_indexers( array( 'options' => array( $protected ) ) );
+		$req2 = Mockery::mock( 'WP_REST_Request' );
+		$req2->shouldReceive( 'get_param' )->with( 'q' )->andReturn( '' );
+		$req2->shouldReceive( 'get_param' )->with( 'facet' )->andReturn( '' );
+		$flat = $controller2->get_spotlight_items( $req2 );
+
+		$this->assertNotEmpty( $flat['options'] );
+		$this->assertTrue( $flat['options'][0]['protected'] );
+		$this->assertNull( $flat['options'][0]['value'] );
 	}
 }

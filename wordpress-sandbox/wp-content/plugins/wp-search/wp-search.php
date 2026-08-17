@@ -57,6 +57,7 @@ function wp_search_load(): void {
 		'class-products-indexer.php',
 		'class-rest-controller.php',
 		'class-admin.php',
+		'class-cli-command.php',
 	);
 	
 	foreach ( $files as $file ) {
@@ -161,3 +162,21 @@ function wp_search_deactivate(): void {
 	}
 }
 register_deactivation_hook( WP_SEARCH_PLUGIN_FILE, 'wp_search_deactivate' );
+
+/**
+ * Record a successful login so users can show a last-login timestamp.
+ *
+ * @since 1.0.0
+ * @param string   $user_login The user's login name.
+ * @param \WP_User $user       The user object.
+ * @return void
+ */
+function wp_search_record_login( string $user_login, \WP_User $user ): void {
+	update_user_meta( $user->ID, '_last_login', time() );
+}
+add_action( 'wp_login', 'wp_search_record_login', 10, 2 );
+
+if ( defined( 'WP_CLI' ) && WP_CLI ) {
+	require_once WP_SEARCH_PLUGIN_DIR . 'includes/class-cli-command.php';
+	\WP_CLI::add_command( 'wp-search', 'WP_Search\\CLI_Command' );
+}

@@ -31,6 +31,14 @@ class Options_Indexer extends Indexer implements Spotlight_Provider {
 	const SOURCE = 'options';
 
 	/**
+	 * Maximum number of option records surfaced in the spotlight response.
+	 *
+	 * @since 1.0.0
+	 * @var int
+	 */
+	const RECORDS_LIMIT = 50;
+
+	/**
 	 * Option families surfaced by this indexer, with weight and explainer.
 	 *
 	 * Weights mirror spotlight-data.json so important options sort first.
@@ -150,9 +158,6 @@ class Options_Indexer extends Indexer implements Spotlight_Provider {
 		// Stable ID assignment regardless of row order.
 		uksort( $by_name, 'strnatcasecmp' );
 
-		$records = array();
-		$index   = 0;
-
 		$admin_hrefs = array(
 			'siteurl'                     => 'options-general.php',
 			'home'                        => 'options-general.php',
@@ -169,8 +174,14 @@ class Options_Indexer extends Indexer implements Spotlight_Provider {
 			'stylesheet'                  => 'themes.php',
 		);
 
+		$records = array();
+		$index   = 0;
+
 		foreach ( $by_name as $name => $row ) {
 			$index++;
+			if ( $index > self::RECORDS_LIMIT ) {
+				break;
+			}
 			$known     = $this->known_options[ $name ] ?? array(
 				'weight'    => 40,
 				'explainer' => 'WordPress option.',
@@ -198,14 +209,14 @@ class Options_Indexer extends Indexer implements Spotlight_Provider {
 					'terms'  => array_values( array_filter( array_unique( $terms ) ) ),
 					'weight' => (int) $known['weight'],
 				),
-'display' => array(
-				'name'      => $name,
-				'value'     => $value,
-				'autoload'  => $this->normalize_autoload( $row->autoload ?? 'yes' ),
-				'protected' => $protected,
-				'explainer' => $known['explainer'],
-				'url'       => admin_url( $admin_hrefs[ $name ] ?? '' ),
-			),
+				'display' => array(
+					'name'      => $name,
+					'value'     => $value,
+					'autoload'  => $this->normalize_autoload( $row->autoload ?? 'yes' ),
+					'protected' => $protected,
+					'explainer' => $known['explainer'],
+					'url'       => admin_url( $admin_hrefs[ $name ] ?? 'options-general.php' ),
+				),
 			);
 		}
 

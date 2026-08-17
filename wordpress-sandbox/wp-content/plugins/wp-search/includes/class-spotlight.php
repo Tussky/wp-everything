@@ -72,6 +72,154 @@ class Spotlight {
 	}
 
 	/**
+	 * Per-facet cap applied to the flat payload. Mirrors the contract.
+	 *
+	 * @since 1.0.0
+	 * @var int
+	 */
+	const FACET_CAP = 50;
+
+	/**
+	 * Exact field list emitted per facet in the flat wire payload.
+	 *
+	 * Order is the on-the-wire order. Drives projection and the contract tests.
+	 *
+	 * @since 1.0.0
+	 * @var array<string, array<string>>
+	 */
+	const FACET_FIELDS = array(
+		'users'    => array( 'id', 'hue', 'displayName', 'username', 'role', 'email', 'capabilities', 'registered', 'lastLogin', 'url' ),
+		'plugins'  => array( 'id', 'name', 'slug', 'active', 'version', 'updateAvailable', 'author', 'description', 'url' ),
+		'options'  => array( 'id', 'name', 'value', 'protected', 'autoload', 'explainer', 'url' ),
+		'settings' => array( 'id', 'source', 'sourceKind', 'breadcrumb', 'language', 'snippet', 'url' ),
+	);
+
+	/**
+	 * Build the flat Spotlight wire payload from provider records.
+	 *
+	 * Unlike {@see build_response()}, this returns the flat contract object
+	 * `{ users, plugins, options, settings }` with no `_meta`/`facets` wrapper
+	 * and no `search`/`display` sub-objects. Matching stays server-side here on
+	 * `search.terms`; each facet is capped at {@see FACET_CAP}, sorted by
+	 * `search.weight` descending (id as tiebreaker), and projected to the exact
+	 * field list in {@see FACET_FIELDS}.
+	 *
+	 * @since 1.0.0
+	 * @param array<mixed> $records      Spotlight records from all providers (nested internal shape).
+	 * @param string       $query        Raw search query.
+	 * @param string       $facet_filter Optional facet to restrict to (''|users|plugins|options|settings).
+	 * @return array<mixed> Flat payload keyed by facet.
+	 */
+	public static function to_flat_payload( array $records, string $query, string $facet_filter = '' ): array {
+		$term   = self::normalize( $query );
+		$groups = array();
+		foreach ( self::FACET_ORDER as $facet ) {
+			$groups[ $facet ] = array();
+		}
+
+		foreach ( $records as $record ) {
+			if ( ! is_array( $record ) ) {
+				continue;
+			}
+			$facet = isset( $record['facet'] ) ? (string) $record['facet'] : '';
+			if ( ! isset( $groups[ $facet ] ) ) {
+				continue;
+			}
+			if ( '' !== $term && ! self::record_matches( $record, $term ) ) {
+				continue;
+			}
+			$groups[ $facet ][] = $record;
+		}
+
+		$payload = array();
+		foreach ( self::FACET_ORDER as $facet ) {
+			$rows = $groups[ $facet ];
+			usort(
+				$rows,
+				static function ( $a, $b ) {
+					$wa = isset( $a['search']['weight'] ) ? (int) $a['search']['weight'] : 0;
+					$wb = isset( $b['search']['weight'] ) ? (int) $b['search']['weight'] : 0;
+					if ( $wa === $wb ) {
+						$ia = isset( $a['id'] ) ? (string) $a['id'] : '';
+						$ib = isset( $b['id'] ) ? (string) $b['id'] : '';
+						return $ia <=> $ib;
+					}
+					return $wb <=> $wa;
+				}
+			);
+			if ( count( $rows ) > self::FACET_CAP ) {
+				$rows = array_slice( $rows, 0, self::FACET_CAP );
+			}
+			$payload[ $facet ] = array_map(
+				static function ( $record ) use ( $facet ) {
+					return self::project_record( $facet, $record );
+				},
+				$rows
+			);
+		}
+
+		if ( '' !== $facet_filter && isset( $payload[ $facet_filter ] ) ) {
+			foreach ( self::FACET_ORDER as $f ) {
+				if ( $f !== $facet_filter ) {
+					$payload[ $f ] = array();
+				}
+			}
+		}
+
+		return $payload;
+	}
+
+	/**
+	 * Project a single nested internal record to its flat wire shape for a facet.
+	 *
+	 * Emits exactly the keys in {@see FACET_FIELDS} for that facet — nothing else
+	 * — pulling values from the record's `display` block. `passwordHash` is never
+	 * projected. Missing display values default to sane empties.
+	 *
+	 * @since 1.0.0
+	 * @param string       $facet  Facet name.
+	 * @param array<mixed> $record Nested internal record.
+	 * @return array<mixed> Flat record.
+	 */
+	public static function project_record( string $facet, array $record ): array {
+		$display = isset( $record['display'] ) && is_array( $record['display'] ) ? $record['display'] : array();
+		$fields  = self::FACET_FIELDS[ $facet ] ?? array();
+		$out     = array();
+
+		foreach ( $fields as $field ) {
+			if ( 'id' === $field ) {
+				$out['id'] = isset( $record['id'] ) ? $record['id'] : '';
+				continue;
+			}
+			$value = $display[ $field ] ?? null;
+			// Coerce scalar/empty to the contract's typed empties.
+			if ( 'capabilities' === $field || 'breadcrumb' === $field ) {
+				$out[ $field ] = is_array( $value ) ? array_values( $value ) : array();
+				continue;
+			}
+			if ( 'active' === $field ) {
+				$out[ $field ] = (bool) $value;
+				continue;
+			}
+			if ( 'protected' === $field ) {
+				$out[ $field ] = (bool) $value;
+				continue;
+			}
+			if ( 'hue' === $field ) {
+				$out[ $field ] = isset( $value ) ? (int) $value : 0;
+				continue;
+			}
+			if ( 'updateAvailable' === $field ) {
+				$out[ $field ] = ( null === $value || '' === $value ) ? null : (string) $value;
+				continue;
+			}
+			$out[ $field ] = null === $value ? '' : $value;
+		}
+
+		return $out;
+	}
+
+	/**
 	 * Test a single record's `search.terms` against the normalized query.
 	 *
 	 * @since 1.0.0

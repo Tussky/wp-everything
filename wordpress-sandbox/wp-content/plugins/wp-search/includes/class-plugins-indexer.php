@@ -37,6 +37,14 @@ class Plugins_Indexer extends Indexer implements Spotlight_Provider {
 	const RESULTS_LIMIT = 20;
 
 	/**
+	 * Maximum number of plugin records surfaced in the spotlight response.
+	 *
+	 * @since 1.0.0
+	 * @var int
+	 */
+	const RECORDS_LIMIT = 50;
+
+	/**
 	 * Return the source label for these results.
 	 *
 	 * @since 1.0.0
@@ -111,23 +119,34 @@ $results[] = $this->normalize_record(
 		}
 
 		$plugins = get_plugins();
+		$updates = get_site_transient( 'update_plugins' );
+		if ( ! is_object( $updates ) || ! isset( $updates->response ) || ! is_array( $updates->response ) ) {
+			$updates = (object) array( 'response' => array() );
+		}
 
 		$records = array();
 		$index   = 0;
 
 		foreach ( $plugins as $plugin_file => $plugin_data ) {
 			$index++;
+			if ( $index > self::RECORDS_LIMIT ) {
+				break;
+			}
 
-			$name        = $plugin_data['Name'] ?? '';
-			$description = wp_strip_all_tags( $plugin_data['Description'] ?? '' );
-			$author      = wp_strip_all_tags( $plugin_data['Author'] ?? '' );
-			$active      = is_plugin_active( $plugin_file );
+			$name           = $plugin_data['Name'] ?? '';
+			$description    = wp_strip_all_tags( $plugin_data['Description'] ?? '' );
+			$author         = wp_strip_all_tags( $plugin_data['Author'] ?? '' );
+			$active         = is_plugin_active( $plugin_file );
+			$version        = (string) ( $plugin_data['Version'] ?? '' );
+			$update_version = isset( $updates->response[ $plugin_file ]->new_version ) ? (string) $updates->response[ $plugin_file ]->new_version : null;
 
-			$terms = array_unique(
-				array_filter(
+			$terms = array_filter(
+				array_unique(
 					array(
 						$name,
+						$plugin_file,
 						$author,
+						$version,
 					)
 				)
 			);
@@ -140,12 +159,17 @@ $results[] = $this->normalize_record(
 				'facet'   => self::SOURCE,
 				'search'  => array(
 					'terms'  => array_map( 'strval', $terms ),
-					'weight' => $active ? 80 : 50,
+					'weight' => $active ? 100 : 50,
 				),
 				'display' => array(
-					'name'   => $name,
-					'status' => $active ? 'active' : 'inactive',
-					'url'    => admin_url( 'plugins.php' ),
+					'name'            => $name,
+					'slug'            => $plugin_file,
+					'active'          => $active,
+					'version'         => $version,
+					'updateAvailable' => $update_version,
+					'author'          => $author,
+					'description'     => $description,
+					'url'             => admin_url( 'plugins.php' ),
 				),
 			);
 		}
