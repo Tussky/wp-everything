@@ -11,13 +11,7 @@
 	cacheResult="false">
 	<testsuites>
 		<testsuite name="wp-search-unit">
-			<file>tests/unit/REST_Controller_Tests.php</file>
-			<file>tests/unit/Settings_Indexer_Tests.php</file>
-			<file>tests/unit/Users_Indexer_Tests.php</file>
-			<file>tests/unit/Posts_Indexer_Tests.php</file>
-			<file>tests/unit/Plugins_Indexer_Tests.php</file>
-			<file>tests/unit/Menus_Indexer_Tests.php</file>
-			<file>tests/unit/Options_Indexer_Tests.php</file>
+			<directory suffix="Tests.php">tests/unit</directory>
 		</testsuite>
 	</testsuites>
 </phpunit>
