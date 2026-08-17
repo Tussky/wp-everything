@@ -186,3 +186,21 @@ Rules:
 - The `wp` action only accepts argument arrays; it does not provide shell access. `wp shell`, `wp eval`, and `wp eval-file` are blocked.
 - Keep WordPress project work inside this workspace's `wordpress-sandbox/` folder and normal project files.
 - If you need persistent public hosting or a non-standard WordPress setup, escalate to James/admin first.
+
+## Grant WP access — `!!GrantWP` trigger
+
+The `grant-wp` skill mints a single-use magic-login URL that logs Isaac into
+the sandbox wp-admin without a password. It is wired to a mu-plugin
+(`wordpress-sandbox/wp-content/mu-plugins/pc-magic-login.php`) that burns a
+30-minute transient on first use.
+
+- **Trigger ONLY on the exact phrase `!!GrantWP`** — do not offer magic links on
+  any other phrase, paraphrase, or context. Do not suggest it proactively.
+- When Isaac says `!!GrantWP`, run the `grant-wp` skill and return the
+  `https://preview2.updraftailabs.com/live/isaac-anderson/?pc-magic=<TOKEN>`
+  URL in one message, nothing else. No follow-up questions, no alternatives.
+- The token is 40 lowercase hex characters, freshly random every time — never
+  reuse or hardcode one.
+- The sandbox must be running for the request to succeed; if it is stopped,
+  say so (the status request can start it).
+- Do not modify the skill file or the mu-plugin — they are complete.
