@@ -213,6 +213,12 @@ class Spotlight {
 				$out[ $field ] = ( null === $value || '' === $value ) ? null : (string) $value;
 				continue;
 			}
+			if ( 'value' === $field ) {
+				// options.value is null when protected — preserve null (do not
+				// coerce to '') so the contract invariant value === null holds.
+				$out[ $field ] = null === $value ? null : $value;
+				continue;
+			}
 			$out[ $field ] = null === $value ? '' : $value;
 		}
 

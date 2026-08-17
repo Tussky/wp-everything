@@ -388,7 +388,14 @@ class Settings_Indexer extends Indexer implements Spotlight_Provider {
 					array_merge(
 						array( $source ),
 						$breadcrumb,
-						array( $snippet_text )
+						array( $snippet_text ),
+						array_filter(
+							array(
+								(string) ( $record['pageTitle'] ?? '' ),
+								(string) ( $record['fieldId'] ?? '' ),
+								(string) ( $record['fieldLabel'] ?? '' ),
+							)
+						)
 					)
 				)
 			);
