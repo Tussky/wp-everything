@@ -86,9 +86,12 @@ if ( ! class_exists( 'WP_REST_Server' ) ) {
 $includes = array(
 	'interface-spotlight-provider.php',
 	'class-indexer.php',
+	'interface-spotlight-provider.php',
+	'class-spotlight.php',
 	'class-settings-indexer.php',
 	'class-users-indexer.php',
 	'class-plugins-indexer.php',
+	'class-options-indexer.php',
 	'class-menus-indexer.php',
 	'class-posts-indexer.php',
 	'class-products-indexer.php',

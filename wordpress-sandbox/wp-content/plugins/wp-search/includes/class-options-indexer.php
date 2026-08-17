@@ -31,6 +31,14 @@ class Options_Indexer extends Indexer implements Spotlight_Provider {
 	const SOURCE = 'options';
 
 	/**
+	 * Maximum number of option records surfaced in the spotlight response.
+	 *
+	 * @since 1.0.0
+	 * @var int
+	 */
+	const RECORDS_LIMIT = 50;
+
+	/**
 	 * Option families surfaced by this indexer, with weight and explainer.
 	 *
 	 * Weights mirror spotlight-data.json so important options sort first.
@@ -104,43 +112,15 @@ class Options_Indexer extends Indexer implements Spotlight_Provider {
 	}
 
 	/**
-	 * Search options by name, explainer keywords or unprotected value.
+	 * Search is handled by Spotlight::record_matches() against the full
+	 * record set. This indexer only needs get_records().
 	 *
 	 * @since 1.0.0
 	 * @param string $query Search query.
 	 * @return array<mixed>
 	 */
 	public function search( string $query ): array {
-		if ( ! current_user_can( 'manage_options' ) || '' === trim( $query ) ) {
-			return array();
-		}
-
-		$records = $this->get_records();
-		if ( empty( $records ) ) {
-			return array();
-		}
-
-		$term    = $this->normalize_query( $query );
-		$results = array();
-
-		foreach ( $records as $record ) {
-			if ( ! is_array( $record ) || ! isset( $record['search']['terms'] ) || ! is_array( $record['search']['terms'] ) ) {
-				continue;
-			}
-
-			foreach ( $record['search']['terms'] as $haystack ) {
-				if ( ! is_string( $haystack ) ) {
-					continue;
-				}
-
-				if ( false !== strpos( $this->normalize_query( $haystack ), $term ) ) {
-					$results[] = $record;
-					break;
-				}
-			}
-		}
-
-		return $results;
+		return array();
 	}
 
 	/**
@@ -178,11 +158,30 @@ class Options_Indexer extends Indexer implements Spotlight_Provider {
 		// Stable ID assignment regardless of row order.
 		uksort( $by_name, 'strnatcasecmp' );
 
+		$admin_hrefs = array(
+			'siteurl'                     => 'options-general.php',
+			'home'                        => 'options-general.php',
+			'blogname'                    => 'options-general.php',
+			'admin_email'                 => 'options-general.php',
+			'active_plugins'              => 'plugins.php',
+			'woocommerce_stripe_settings' => 'admin.php?page=wc-settings&tab=checkout&section=stripe',
+			'akismet_api_key'             => 'admin.php?page=akismet-key-config',
+			'permalink_structure'         => 'options-permalink.php',
+			'woocommerce_currency'        => 'admin.php?page=wc-settings&tab=general',
+			'users_can_register'          => 'options-general.php#users_can_register',
+			'timezone_string'             => 'options-general.php',
+			'template'                    => 'themes.php',
+			'stylesheet'                  => 'themes.php',
+		);
+
 		$records = array();
 		$index   = 0;
 
 		foreach ( $by_name as $name => $row ) {
 			$index++;
+			if ( $index > self::RECORDS_LIMIT ) {
+				break;
+			}
 			$known     = $this->known_options[ $name ] ?? array(
 				'weight'    => 40,
 				'explainer' => 'WordPress option.',
@@ -199,7 +198,7 @@ class Options_Indexer extends Indexer implements Spotlight_Provider {
 				$terms[] = $explainer_term;
 			}
 
-			if ( ! $protected && null !== $value ) {
+			if ( ! $protected && null !== $value && ! $this->is_machine_readable( $value ) ) {
 				$terms[] = $value;
 			}
 
@@ -216,6 +215,7 @@ class Options_Indexer extends Indexer implements Spotlight_Provider {
 					'autoload'  => $this->normalize_autoload( $row->autoload ?? 'yes' ),
 					'protected' => $protected,
 					'explainer' => $known['explainer'],
+					'url'       => admin_url( $admin_hrefs[ $name ] ?? 'options-general.php' ),
 				),
 			);
 		}
@@ -299,5 +299,29 @@ class Options_Indexer extends Indexer implements Spotlight_Provider {
 			return 'no';
 		}
 		return $autoload;
+	}
+
+	/**
+	 * Decide whether a value is machine-read (serialized, JSON, or too long)
+	 * and should be omitted from search terms.
+	 *
+	 * @since 1.0.0
+	 * @param string $value Option value.
+	 * @return bool
+	 */
+	private function is_machine_readable( string $value ): bool {
+		if ( strlen( $value ) > 500 ) {
+			return true;
+		}
+		if ( is_serialized_string( $value ) ) {
+			return true;
+		}
+		if ( '{' === substr( ltrim( $value ), 0, 1 ) && '}' === substr( rtrim( $value ), -1 ) ) {
+			$decoded = json_decode( $value, true );
+			if ( JSON_ERROR_NONE === json_last_error() ) {
+				return true;
+			}
+		}
+		return false;
 	}
 }

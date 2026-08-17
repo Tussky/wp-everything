@@ -37,6 +37,14 @@ class REST_Controller {
 	const ROUTE = '/search';
 
 	/**
+	 * Route for grouped spotlight responses.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const SPOTLIGHT_ROUTE = '/spotlight';
+
+	/**
 	 * Initialize REST endpoints.
 	 *
 	 * @since 1.0.0
@@ -53,21 +61,42 @@ class REST_Controller {
 	 * @return void
 	 */
 	public function register_routes(): void {
+		$args = array(
+			'methods'             => array( 'GET', 'POST' ),
+			'permission_callback' => array( $this, 'check_permission' ),
+			'args'                => array(
+				'q' => array(
+					'required'          => false,
+					'default'           => '',
+					'sanitize_callback' => 'sanitize_text_field',
+					'validate_callback' => array( $this, 'validate_query' ),
+				),
+			),
+		);
+
 		register_rest_route(
 			self::NAMESPACE,
 			self::ROUTE,
-			array(
-				'methods'             => array( 'GET', 'POST' ),
-				'callback'            => array( $this, 'search_items' ),
-				'permission_callback' => array( $this, 'check_permission' ),
-				'args'                => array(
-					'q' => array(
-						'required'          => false,
-						'default'           => '',
-						'sanitize_callback' => 'sanitize_text_field',
-						'validate_callback' => array( $this, 'validate_query' ),
-					),
-				),
+			array_merge(
+				$args,
+				array( 'callback' => array( $this, 'search_items' ) )
+			)
+		);
+
+		$spotlight_args = $args;
+		$spotlight_args['args']['facet'] = array(
+			'required'          => false,
+			'default'           => '',
+			'sanitize_callback' => 'sanitize_text_field',
+			'validate_callback' => array( $this, 'validate_facet' ),
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			self::SPOTLIGHT_ROUTE,
+			array_merge(
+				$spotlight_args,
+				array( 'callback' => array( $this, 'get_spotlight_items' ) )
 			)
 		);
 	}
@@ -110,12 +139,42 @@ class REST_Controller {
 	}
 
 	/**
+	 * Validate the optional facet filter for the /spotlight route.
+	 *
+	 * Accepts an empty string (no filter) or one of the canonical facets.
+	 *
+	 * @since 1.0.0
+	 * @param string $value Facet value.
+	 * @return true|\WP_Error
+	 */
+	public function validate_facet( string $value ) {
+		if ( '' === $value || in_array( $value, Spotlight::FACET_ORDER, true ) ) {
+			return true;
+		}
+
+		return new \WP_Error(
+			'wp_search_invalid_facet',
+			__( 'Invalid facet. Must be one of: users, plugins, options, settings, or empty.', 'wp-search' ),
+			array( 'status' => 400 )
+		);
+	}
+
+	/**
 	 * Ensure only administrators can search settings.
 	 *
 	 * @since 1.0.0
 	 * @return true|\WP_Error
 	 */
 	public function check_permission() {
+		$nonce = isset( $_SERVER['HTTP_X_WP_NONCE'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_WP_NONCE'] ) ) : '';
+		if ( $nonce && ! wp_verify_nonce( $nonce, 'wp_rest' ) ) {
+			return new \WP_Error(
+				'wp_search_bad_nonce',
+				__( 'Invalid or expired REST nonce.', 'wp-search' ),
+				array( 'status' => 403 )
+			);
+		}
+
 		if ( current_user_can( 'manage_options' ) ) {
 			return true;
 		}
@@ -128,30 +187,126 @@ class REST_Controller {
 	}
 
 	/**
-	 * Search across settings, content, and products.
+	 * Search across the spotlight facets and return flat results for the admin frontend.
+	 *
+	 * Each Spotlight_Provider returns its full record set; the Spotlight engine
+	 * matches against `search.terms` and ranks by `search.weight`. The response is
+	 * then flattened into a `{results, query}` shape consumed by admin.js.
 	 *
 	 * @since 1.0.0
 	 * @param \WP_REST_Request $request REST request.
 	 * @return \WP_REST_Response|\WP_Error
 	 */
 	public function search_items( \WP_REST_Request $request ) {
-		$query   = sanitize_text_field( $request->get_param( 'q' ) );
-		$results = array();
-
-		foreach ( $this->get_indexers() as $indexer ) {
-			if ( ! $indexer instanceof Indexer ) {
-				continue;
-			}
-			$results = array_merge( $results, $indexer->search( $query ) );
-		}
+		$query    = sanitize_text_field( $request->get_param( 'q' ) );
+		$response = Spotlight::build_response( $this->collect_spotlight_records(), $query );
 
 		return rest_ensure_response(
 			array(
+				'results' => self::flatten_spotlight_facets( $response, $query ),
 				'query'   => $query,
-				'count'   => count( $results ),
-				'results' => $results,
 			)
 		);
+	}
+
+	/**
+	 * Flatten a facet-grouped Spotlight response into a flat result list.
+	 *
+	 * @since 1.0.0
+	 * @param array<mixed> $response Spotlight response with _meta + facets.
+	 * @param string       $query    Original search query.
+	 * @return array<mixed>
+	 */
+	private static function flatten_spotlight_facets( array $response, string $query ): array {
+		$results = array();
+		$facets  = Spotlight::FACET_ORDER;
+
+		foreach ( $facets as $facet ) {
+			if ( empty( $response['facets'][ $facet ] ) || ! is_array( $response['facets'][ $facet ] ) ) {
+				continue;
+			}
+
+			foreach ( $response['facets'][ $facet ] as $record ) {
+				if ( ! is_array( $record ) || empty( $record['display'] ) ) {
+					continue;
+				}
+
+				$display = $record['display'];
+
+			$results[] = array(
+				'source'      => $facet,
+				'sourceKind'  => $display['sourceKind'] ?? '',
+				'url'         => $display['url'] ?? $display['edit_url'] ?? $display['editURL'] ?? '',
+				'title'       => $display['title'] ?? $display['displayName'] ?? $display['display_name'] ?? $display['name'] ?? $display['username'] ?? '',
+				'description' => $display['description'] ?? $display['desc'] ?? '',
+				'breadcrumb'  => $display['breadcrumb'] ?? null,
+				'snippet'     => $display['snippet'] ?? '',
+				'language'    => $display['language'] ?? '',
+			);
+			}
+		}
+
+		return $results;
+	}
+
+	/**
+	 * Return the flat Spotlight payload for the /spotlight route.
+	 *
+	 * Response shape is the flat contract object
+	 * `{ users, plugins, options, settings }` — no `_meta`, no `facets`
+	 * wrapper, no `search`/`display` sub-objects. The optional `facet` param
+	 * restricts the payload to one array (others empty) server-side.
+	 *
+	 * @since 1.0.0
+	 * @param \WP_REST_Request $request REST request.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function get_spotlight_items( \WP_REST_Request $request ) {
+		$query = sanitize_text_field( $request->get_param( 'q' ) );
+		$facet = sanitize_text_field( $request->get_param( 'facet' ) );
+
+		$payload = Spotlight::to_flat_payload( $this->collect_spotlight_records(), $query, $facet );
+
+		return rest_ensure_response( $payload );
+	}
+
+	/**
+	 * Build the flat Spotlight payload for the inline admin bootstrap.
+	 *
+	 * Same builder the /spotlight route uses, exposed for the admin screen so
+	 * `window.WPSS_DATA` carries live data without a separate HTTP round-trip.
+	 *
+	 * @since 1.0.0
+	 * @param string $query Optional search query.
+	 * @param string $facet Optional facet filter.
+	 * @return array<mixed> Flat payload keyed by facet.
+	 */
+	public function build_spotlight_payload( string $query = '', string $facet = '' ): array {
+		return Spotlight::to_flat_payload( $this->collect_spotlight_records(), $query, $facet );
+	}
+
+	/**
+	 * Collect spotlight records from every provider that exposes them.
+	 *
+	 * @since 1.0.0
+	 * @return array<mixed>
+	 */
+	private function collect_spotlight_records(): array {
+		$records = array();
+
+		foreach ( $this->get_indexers() as $indexer ) {
+			if ( ! $indexer instanceof Spotlight_Provider ) {
+				continue;
+			}
+			try {
+				$records = array_merge( $records, $indexer->get_records() );
+			} catch ( \Throwable $e ) {
+				error_log( 'wp-search spotlight provider error: ' . $e->getMessage() );
+				continue;
+			}
+		}
+
+		return $records;
 	}
 
 	/**
@@ -161,13 +316,25 @@ class REST_Controller {
 	 * @return array<Indexer>
 	 */
 	protected function get_indexers(): array {
-		return array(
-			new Settings_Indexer(),
-			new Users_Indexer(),
-			new Plugins_Indexer(),
-			new Menus_Indexer(),
-			new Posts_Indexer(),
-			new Products_Indexer(),
+		$factories = array(
+			static fn() => new Settings_Indexer(),
+			static fn() => new Users_Indexer(),
+			static fn() => new Plugins_Indexer(),
+			static fn() => new Options_Indexer(),
+			static fn() => new Menus_Indexer(),
+			static fn() => new Posts_Indexer(),
+			static fn() => new Products_Indexer(),
 		);
+
+		$indexers = array();
+		foreach ( $factories as $factory ) {
+			try {
+				$indexers[] = $factory();
+			} catch ( \Throwable $e ) {
+				error_log( 'wp-search: Failed to instantiate indexer: ' . $e->getMessage() );
+			}
+		}
+
+		return $indexers;
 	}
 }

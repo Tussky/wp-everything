@@ -42,7 +42,7 @@ class Users_Indexer extends Indexer implements Spotlight_Provider {
 	 * @since 1.0.0
 	 * @var int
 	 */
-	const RECORDS_LIMIT = 100;
+	const RECORDS_LIMIT = 50;
 
 	/**
 	 * Return the source label for these results.
@@ -171,7 +171,8 @@ class Users_Indexer extends Indexer implements Spotlight_Provider {
 					'capabilities' => $caps,
 					'registered'   => gmdate( 'Y-m-d', strtotime( $user->user_registered ) ),
 					'lastLogin'    => $last_login,
-					'avatarHue'    => ( (int) $user->ID * 47 ) % 360,
+					'hue'          => ( (int) $user->ID * 47 ) % 360,
+					'url'          => admin_url( 'user-edit.php?user_id=' . intval( $user->ID ) ),
 				),
 			);
 		}

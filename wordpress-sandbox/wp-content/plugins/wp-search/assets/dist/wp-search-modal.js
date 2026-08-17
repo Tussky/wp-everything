@@ -18,7 +18,8 @@
 		content:  { label: 'Posts',   icon: 'dashicons-admin-post',    badgeClass: 'wp-search-badge--posts' },
 		users:    { label: 'Users',   icon: 'dashicons-admin-users',   badgeClass: 'wp-search-badge--users' },
 		plugins:  { label: 'Plugins', icon: 'dashicons-admin-plugins', badgeClass: 'wp-search-badge--plugins' },
-		settings: { label: 'Options', icon: 'dashicons-admin-generic', badgeClass: 'wp-search-badge--options' },
+		settings: { label: 'Settings pages', icon: 'dashicons-admin-generic', badgeClass: 'wp-search-badge--options' },
+		options:  { label: 'Options', icon: 'dashicons-admin-settings', badgeClass: 'wp-search-badge--options' },
 		menus:    { label: 'Menus',   icon: 'dashicons-menu',           badgeClass: 'wp-search-badge--menus' },
 		products: { label: 'Products',icon: 'dashicons-cart',           badgeClass: 'wp-search-badge--products' },
 	};
@@ -28,7 +29,7 @@
 	 *
 	 * @type {Array<string>}
 	 */
-	const SOURCE_ORDER = ['content', 'users', 'plugins', 'settings', 'menus', 'products'];
+	const SOURCE_ORDER = ['content', 'users', 'plugins', 'settings', 'options', 'menus', 'products'];
 
 	/**
 	 * REST client for search requests.
@@ -433,13 +434,22 @@
 					const url = this._esc(item.url || '');
 					const title = this.highlight(this._esc(item.title || '(no title)'), this._esc(query));
 					const description = item.description ? '<div class="wp-search-modal__item-meta">' + this._esc(item.description) + '</div>' : '';
+					const breadcrumb = Array.isArray(item.breadcrumb) && item.breadcrumb.length
+						? '<div class="wp-search-modal__item-breadcrumb">' + this._esc(item.breadcrumb.join(' › ')) + '</div>'
+						: '';
+					const snippetText = item.snippet ? item.snippet.replace(/<[^>]*>/g, '') : '';
+					const snippet = snippetText
+						? '<div class="wp-search-modal__item-snippet"><code>' + this.highlight(this._esc(snippetText), this._esc(query)) + '</code></div>'
+						: '';
 					const typeLabel = (SOURCE_CONFIG[item.source] || {}).label || this._esc(item.source || '');
 					const badgeClass = (SOURCE_CONFIG[item.source] || {}).badgeClass || '';
 
 					html += '<a href="' + url + '" class="wp-search-modal__item" id="' + id + '" data-url="' + url + '" role="option" tabindex="-1">' +
 							'<div class="wp-search-modal__item-body">' +
 								'<div class="wp-search-modal__item-title">' + title + '</div>' +
+								breadcrumb +
 								description +
+								snippet +
 							'</div>' +
 							'<span class="wp-search-modal__item-source ' + this._esc(badgeClass) + '">' + typeLabel + '</span>' +
 						'</a>';

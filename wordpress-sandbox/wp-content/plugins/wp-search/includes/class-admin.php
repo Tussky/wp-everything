@@ -45,6 +45,7 @@ class Admin {
 	public function init(): void {
 		add_action( 'admin_menu', array( $this, 'add_tools_page' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
+		add_action( 'admin_print_footer_scripts-tools_page_' . self::PAGE_SLUG, array( $this, 'print_spotlight_bootstrap' ) );
 		add_action( 'admin_bar_menu', array( $this, 'add_admin_bar_node' ), 100 );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 	}
@@ -110,6 +111,39 @@ class Admin {
 				),
 			)
 		);
+	}
+
+	/**
+	 * Inline the flat Spotlight payload as window.WPSS_DATA on the Tools screen.
+	 *
+	 * Printed as a raw <script> (not wp_localize_script, which stringifies
+	 * scalars — see the IA-162 bug) and scoped to the Tools > wp->search screen
+	 * for users with manage_options, so every admin screen is not seeded with
+	 * every user's email and capabilities. The frontend reads window.WPSS_DATA
+	 * before it runs and falls back to built-in sample data when it is absent.
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
+	public function print_spotlight_bootstrap(): void {
+		if ( ! current_user_can( self::CAPABILITY ) ) {
+			return;
+		}
+
+		try {
+			$rest     = new REST_Controller();
+			$payload  = $rest->build_spotlight_payload();
+			$encoded  = wp_json_encode( $payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+		} catch ( \Throwable $e ) {
+			error_log( 'wp-search bootstrap: failed to build spotlight payload: ' . $e->getMessage() );
+			return;
+		}
+
+		if ( ! is_string( $encoded ) || '' === $encoded ) {
+			return;
+		}
+
+		echo '<script>window.WPSS_DATA = ' . $encoded . ';</script>' . "\n";
 	}
 
 	/**

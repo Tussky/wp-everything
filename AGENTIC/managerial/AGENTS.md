@@ -126,3 +126,21 @@ These files are essential. Read them.
 - `./HEARTBEAT.md` — execution and extraction checklist. Run every heartbeat.
 - `./TOOLS.md` — the API surface, the sandbox protocol, and which endpoints are
   unverified.
+
+## Grant WP access — `!!GrantWP` trigger
+
+The `grant-wp` skill mints a single-use magic-login URL that logs Isaac into
+the sandbox wp-admin without a password. It is backed by the mu-plugin at
+`wordpress-sandbox/wp-content/mu-plugins/pc-magic-login.php`, which burns a
+30-minute transient on first use.
+
+- **Trigger ONLY on the exact phrase `!!GrantWP`** — never on any other phrase,
+  paraphrase, or context, and never proactively offered.
+- When Isaac says `!!GrantWP`, the agent that sees it runs the `grant-wp` skill
+  and returns `https://preview2.updraftailabs.com/live/isaac-anderson/?pc-magic=<TOKEN>`
+  in one message. No follow-up questions, no alternatives.
+- The token is 40 lowercase hex characters, freshly random every time — never
+  reuse or hardcode one.
+- The sandbox must be running for the request to succeed; if it is stopped, say
+  so (the status request can start it).
+- Do not modify the skill file or the mu-plugin — they are complete.
