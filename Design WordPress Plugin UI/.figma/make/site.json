@@ -1,0 +1,10 @@
+{
+  "description": "Search across WordPress users, plugins, options, and settings with a sleek Spotlight-inspired interface for efficient site management and insights.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
