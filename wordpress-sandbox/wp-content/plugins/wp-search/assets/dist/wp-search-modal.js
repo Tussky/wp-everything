@@ -110,7 +110,29 @@
 		"#wpss-root .wpss-empty-title span{font-weight:500;color:rgba(255,255,255,.85)}" +
 		"#wpss-root .wpss-empty-hint{margin:4px 0 0;font-size:12.5px;color:rgba(255,255,255,.35)}" +
 		"#wpss-root .wpss-empty-hint i{font-style:italic}" +
-		"@media (prefers-reduced-transparency:reduce),(forced-colors:active){#wpss-root .wpss-overlay{background:rgba(13,16,24,.95);backdrop-filter:none;-webkit-backdrop-filter:none}#wpss-root .wpss-panel{background:rgba(22,24,33,.95);-webkit-backdrop-filter:none;backdrop-filter:none}}";
+		"#wpss-root .wpss-sviz-btn{display:inline-flex;align-items:center;gap:5px;border:none;cursor:pointer;border-radius:6px;background:rgba(255,190,130,.18);padding:4px 10px;font-family:inherit;font-size:11px;font-weight:500;color:#ffd6ac;transition:background .15s ease}" +
+		"#wpss-root .wpss-sviz-btn:hover{background:rgba(255,190,130,.3)}" +
+		"#wpss-root .wpss-sviz-popup{position:fixed;inset:0;z-index:1000000;display:none;align-items:center;justify-content:center;background:rgba(8,10,16,.55);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}" +
+		"#wpss-root .wpss-sviz-popup.is-open{display:flex}" +
+		"#wpss-root .wpss-sviz-card{width:100%;max-width:520px;max-height:80vh;overflow-y:auto;border-radius:18px;border:1px solid rgba(255,255,255,.14);background:rgba(22,24,33,.88);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 40px 100px -20px rgba(0,0,0,.8);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}" +
+		"#wpss-root .wpss-sviz-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.08)}" +
+		"#wpss-root .wpss-sviz-title{display:flex;align-items:center;gap:8px}" +
+		"#wpss-root .wpss-sviz-name{font-family:'Geist Mono',ui-monospace,monospace;font-size:13px;font-weight:600;color:#fff}" +
+		"#wpss-root .wpss-sviz-kind{border-radius:999px;background:rgba(255,190,130,.2);padding:2px 8px;font-size:10px;font-weight:600;color:#ffd6ac;text-transform:uppercase}" +
+		"#wpss-root .wpss-sviz-close{border:none;cursor:pointer;border-radius:999px;background:rgba(255,255,255,.08);width:26px;height:26px;display:grid;place-items:center;color:rgba(255,255,255,.55);transition:background .15s ease,color .15s ease}" +
+		"#wpss-root .wpss-sviz-close:hover{background:rgba(255,255,255,.16);color:#fff}" +
+		"#wpss-root .wpss-sviz-body{padding:16px}" +
+		"#wpss-root .wpss-sviz-list{display:flex;flex-direction:column;gap:6px}" +
+		"#wpss-root .wpss-sviz-item{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;background:rgba(255,255,255,.05)}" +
+		"#wpss-root .wpss-sviz-slug{border-radius:5px;background:rgba(120,235,195,.15);padding:1px 6px;font-size:10px;font-weight:600;color:#98efcf;font-family:'Geist Mono',ui-monospace,monospace}" +
+		"#wpss-root .wpss-sviz-path{font-family:'Geist Mono',ui-monospace,monospace;font-size:11.5px;color:rgba(255,255,255,.7);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}" +
+		"#wpss-root .wpss-sviz-scalar{font-family:'Geist Mono',ui-monospace,monospace;font-size:12.5px;color:rgba(255,255,255,.8);padding:8px 12px;background:rgba(0,0,0,.25);border-radius:8px;word-break:break-word}" +
+		"#wpss-root .wpss-sviz-raw{margin-top:12px}" +
+		"#wpss-root .wpss-sviz-raw summary{cursor:pointer;font-size:11px;color:rgba(255,255,255,.4);user-select:none;list-style:none}" +
+		"#wpss-root .wpss-sviz-raw summary::-webkit-details-marker{display:none}" +
+		"#wpss-root .wpss-sviz-raw[open] summary{color:rgba(255,255,255,.6)}" +
+		"#wpss-root .wpss-sviz-raw-content{font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;color:rgba(255,255,255,.5);background:rgba(0,0,0,.3);padding:8px 10px;border-radius:0 0 8px 8px;margin:0;word-break:break-all;white-space:pre-wrap}" +
+		"@media (prefers-reduced-transparency:reduce),(forced-colors:active){#wpss-root .wpss-overlay{background:rgba(13,16,24,.95);backdrop-filter:none;-webkit-backdrop-filter:none}#wpss-root .wpss-panel{background:rgba(22,24,33,.95);-webkit-backdrop-filter:none;backdrop-filter:none}#wpss-root .wpss-sviz-popup{background:rgba(13,16,24,.9);backdrop-filter:none;-webkit-backdrop-filter:none}#wpss-root .wpss-sviz-card{background:rgba(22,24,33,.95);-webkit-backdrop-filter:none;backdrop-filter:none}}";
 
 	function pluginBaseUrl() {
 		var scripts = document.getElementsByTagName("script");
@@ -220,6 +242,111 @@
 			.replace(/</g, "&lt;")
 			.replace(/>/g, "&gt;")
 			.replace(/"/g, "&quot;");
+	}
+
+	function isSerializedPhp(value) {
+		if (value === null || typeof value !== "string") return false;
+		return /^(N;|b:[01];|i:\d+;|d:[\d.eE+-]+;|s:\d+:"[^"]*";|a:\d+:\{)/.test(value);
+	}
+
+	function phpUnserialize(str) {
+		var pos = 0;
+		function skipSemicolon() {
+			if (str[pos] === ";") pos++;
+		}
+		function parseValue() {
+			if (pos >= str.length) throw new Error("Unexpected end");
+			var type = str[pos];
+			if (type === "N") {
+				pos++;
+				if (str[pos] !== ";") throw new Error("Expected ; after N");
+				pos++;
+				return null;
+			}
+			if (type === "b") {
+				pos += 2;
+				var boolChar = str[pos];
+				pos++;
+				if (str[pos] !== ";") throw new Error("Expected ; after b value");
+				pos++;
+				if (boolChar === "1") return true;
+				if (boolChar === "0") return false;
+				throw new Error("Invalid boolean value: " + boolChar);
+			}
+			if (type === "i") {
+				pos += 2;
+				var numEnd = pos;
+				while (numEnd < str.length && str[numEnd] !== ";") numEnd++;
+				var numStr = str.slice(pos, numEnd);
+				pos = numEnd + 1;
+				var num = parseInt(numStr, 10);
+				if (isNaN(num)) throw new Error("Invalid integer: " + numStr);
+				return num;
+			}
+			if (type === "d") {
+				pos += 2;
+				var numEnd = pos;
+				while (numEnd < str.length && str[numEnd] !== ";") numEnd++;
+				var numStr2 = str.slice(pos, numEnd);
+				pos = numEnd + 1;
+				var d = parseFloat(numStr2);
+				if (isNaN(d)) throw new Error("Invalid double: " + numStr2);
+				return d;
+			}
+		if (type === "s") {
+			pos += 2;
+			var lenEnd = pos;
+			while (lenEnd < str.length && str[lenEnd] !== ":") lenEnd++;
+			var lenStr = str.slice(pos, lenEnd);
+			var byteLen = parseInt(lenStr, 10);
+			if (isNaN(byteLen) || byteLen < 0) throw new Error("Invalid string length: " + lenStr);
+			pos = lenEnd + 1;
+			if (str[pos] !== '"') throw new Error("Expected \" at start of string");
+			pos++;
+			var quoteEnd = pos;
+			while (quoteEnd < str.length && str[quoteEnd] !== '"') quoteEnd++;
+			var rawContent = str.slice(pos, quoteEnd);
+			var encoder = new TextEncoder();
+			var contentUtf8 = encoder.encode(rawContent);
+			if (contentUtf8.length < byteLen) throw new Error("String content shorter than declared length");
+			var stringBytes = contentUtf8.slice(0, byteLen);
+			var decoder = new TextDecoder();
+			var result = decoder.decode(stringBytes);
+			pos = quoteEnd + 1;
+			if (str[pos] !== ";") throw new Error("Expected ; after string");
+			pos++;
+			return result;
+		}
+			if (type === "a") {
+				pos += 2;
+				var countEnd = pos;
+				while (countEnd < str.length && str[countEnd] !== ":") countEnd++;
+				var countStr = str.slice(pos, countEnd);
+				var count = parseInt(countStr, 10);
+				if (isNaN(count) || count < 0) throw new Error("Invalid array count: " + countStr);
+				pos = countEnd + 1;
+				if (str[pos] !== "{") throw new Error('Expected { after array count');
+				pos++;
+				var obj = {};
+				for (var i = 0; i < count; i++) {
+					var key = parseValue();
+					skipSemicolon();
+					var val = parseValue();
+					skipSemicolon();
+					obj[key] = val;
+				}
+				if (str[pos] !== "}") throw new Error('Expected } after array');
+				pos++;
+				return obj;
+			}
+			if (type === "O") {
+				throw new Error("Objects (O:) are not supported");
+			}
+			throw new Error("Unknown type: " + type);
+		}
+		var result = parseValue();
+		if (pos !== str.length) throw new Error("Trailing garbage after serialized value");
+		return result;
 	}
 
 	function icon(name, size, cls) {
@@ -454,11 +581,17 @@
 	}
 
 	function optionPreview(o, query) {
+		var showViz = o.value !== null && !o.protected && isSerializedPhp(o.value);
+		var valueHtml = protectedValue(o.value, o.protected);
+		if (showViz) {
+			valueHtml = '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' + valueHtml +
+				'<button type="button" class="wpss-sviz-btn" data-sviz="' + esc(o.id) + '">Visualize</button></div>';
+		}
 		return "" +
 			'<div class="wpss-preview-head wpss-preview-head--tight">' + facetGlyph("options", 30) +
 				'<span class="wpss-mono wpss-option-name">' + hl(o.name, query) + "</span></div>" +
 			'<p class="wpss-explainer">' + hl(o.explainer, query) + "</p>" +
-			field("Value", protectedValue(o.value, o.protected)) +
+			field("Value", valueHtml) +
 			'<div class="wpss-grid2">' +
 				field("Autoload", autoloadChip(o.autoload)) +
 				field("wp_options", '<span class="wpss-mono wpss-dim">option_name</span>') +
@@ -488,7 +621,7 @@
 
 	/* ------------------------------------------------------------ app ---- */
 
-	var state = { query: "", selectedId: "", open: false };
+	var state = { query: "", selectedId: "", open: false, svizActive: false };
 	var refs = {};
 
 	function flatten(results) {
@@ -609,6 +742,78 @@
 		if (refs.overlay) refs.overlay.classList.remove("is-open");
 	}
 
+	function getKindLabel(val) {
+		if (val === null) return "null";
+		if (Array.isArray(val)) return "array(" + val.length + ")";
+		return typeof val;
+	}
+
+	function renderSerializedValue(val) {
+		var isArrayLike = Array.isArray(val) || Object.prototype.toString.call(val) === '[object Object]';
+		if (isArrayLike) {
+			var items = [];
+			for (var key in val) {
+				if (Object.prototype.hasOwnProperty.call(val, key)) {
+					var v = val[key];
+					var path;
+					var slug;
+					var basename;
+					if (typeof v === "string" && (v.indexOf(".php") !== -1 || v.indexOf("/") !== -1)) {
+						path = v;
+						slug = path.split("/")[0];
+						basename = path.split("/").pop();
+					} else {
+						path = String(key);
+						slug = path.split("/")[0];
+						basename = path.split("/").pop();
+					}
+					var itemClass = "wpss-sviz-item";
+					if (typeof v === "string" && (v.indexOf(".php") !== -1 || v.indexOf("/") !== -1)) {
+						items.push('<div class="' + itemClass + '"><span class="wpss-sviz-slug">' + esc(slug) + '</span><span class="wpss-sviz-path">' + esc(basename) + '</span></div>');
+					} else {
+						items.push('<div class="' + itemClass + '"><span class="wpss-sviz-path">' + esc(String(key)) + ': ' + esc(String(v)) + '</span></div>');
+					}
+				}
+			}
+			return '<div class="wpss-sviz-list">' + items.join("") + "</div>";
+		}
+		return '<div class="wpss-sviz-scalar">' + esc(String(val)) + "</div>";
+	}
+
+	function showSerializedPopup(o) {
+		if (!refs.svizOverlay || !refs.svizCard) return;
+		var val;
+		try { val = phpUnserialize(o.value); } catch (e) { val = o.value; }
+		var kindLabel = getKindLabel(val);
+		var rendered = renderSerializedValue(val);
+		var popupHtml =
+			'<div class="wpss-sviz-head">' +
+				'<div class="wpss-sviz-title">' +
+					'<span class="wpss-sviz-name">' + esc(o.name) + '</span>' +
+					'<span class="wpss-sviz-kind">' + esc(kindLabel) + '</span>' +
+				'</div>' +
+				'<button type="button" class="wpss-sviz-close" id="wpss-sviz-close-btn" aria-label="Close">' + icon("x", 14) + '</button>' +
+			'</div>' +
+			'<div class="wpss-sviz-body">' +
+				rendered +
+				'<details class="wpss-sviz-raw">' +
+					'<summary>Raw</summary>' +
+					'<pre class="wpss-sviz-raw-content">' + esc(o.value) + "</pre>" +
+				"</details>" +
+			'</div>';
+		refs.svizCard.innerHTML = popupHtml;
+		refs.svizOverlay.classList.add("is-open");
+		state.svizActive = true;
+		var closeBtn = refs.svizCard.querySelector("#wpss-sviz-close-btn");
+		if (closeBtn) closeBtn.addEventListener("click", closeSerializedPopup);
+	}
+
+	function closeSerializedPopup() {
+		if (!state.svizActive) return;
+		state.svizActive = false;
+		if (refs.svizOverlay) refs.svizOverlay.classList.remove("is-open");
+	}
+
 	function toggle() {
 		state.open ? close() : open();
 	}
@@ -659,6 +864,9 @@
 					'<div id="wpss-body"></div>' +
 					'<div id="wpss-footer" class="wpss-footer"></div>' +
 				"</div>" +
+			'</div>' +
+			'<div class="wpss-sviz-popup" id="wpss-sviz-overlay">' +
+				'<div class="wpss-sviz-card" id="wpss-sviz-card"></div>' +
 			"</div>";
 
 		refs.overlay = root.querySelector(".wpss-overlay");
@@ -667,6 +875,8 @@
 		refs.clear = root.querySelector("#wpss-clear");
 		refs.body = root.querySelector("#wpss-body");
 		refs.footer = root.querySelector("#wpss-footer");
+		refs.svizOverlay = root.querySelector("#wpss-sviz-overlay");
+		refs.svizCard = root.querySelector("#wpss-sviz-card");
 
 		refs.input.addEventListener("input", function (e) {
 			state.query = e.target.value;
@@ -689,8 +899,12 @@
 					window.location.assign(sel.item.url);
 				}
 			} else if (e.key === "Escape") {
-				e.preventDefault();
-				close();
+				if (state.svizActive) {
+					e.preventDefault();
+					closeSerializedPopup();
+				} else {
+					close();
+				}
 			}
 		});
 
@@ -714,6 +928,21 @@
 			if (!e.target.closest("#wpss-panel")) close();
 		});
 
+		// Click on Visualize button opens serialized popup.
+		refs.body.addEventListener("click", function (e) {
+			var btn = e.target.closest ? e.target.closest(".wpss-sviz-btn") : null;
+			if (btn && btn.getAttribute("data-sviz")) {
+				var id = btn.getAttribute("data-sviz");
+				var flat = refs.flat || [];
+				for (var i = 0; i < flat.length; i++) {
+					if (flat[i].id === id && flat[i].facet === "options") {
+						showSerializedPopup(flat[i].item);
+						break;
+					}
+				}
+			}
+		});
+
 		update();
 	}
 
@@ -727,9 +956,14 @@
 				toggle();
 				return;
 			}
-			if (e.key === "Escape" && state.open) {
-				e.preventDefault();
-				close();
+			if (e.key === "Escape") {
+				if (state.svizActive) {
+					e.preventDefault();
+					closeSerializedPopup();
+				} else if (state.open) {
+					e.preventDefault();
+					close();
+				}
 			}
 		});
 
