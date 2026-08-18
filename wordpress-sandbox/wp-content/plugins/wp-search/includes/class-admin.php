@@ -37,6 +37,17 @@ class Admin {
 	const CAPABILITY = 'manage_options';
 
 	/**
+	 * Default keyboard shortcut key.
+	 *
+	 * Moved from 'j' to 't' (IA-193) to avoid colliding with the WordPress Core
+	 * command palette on Cmd/Ctrl+K. Users can still override to any a–z key.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const DEFAULT_SHORTCUT_KEY = 't';
+
+	/**
 	 * Initialize admin hooks.
 	 *
 	 * @since 1.0.0
@@ -78,18 +89,26 @@ class Admin {
 			return;
 		}
 
+		$shortcut_key = get_option( 'wp_search_shortcut_key', self::DEFAULT_SHORTCUT_KEY );
+
+		$dist_dir = WP_SEARCH_PLUGIN_DIR . 'assets/dist/';
+		$css_file = $dist_dir . 'wp-search-modal.css';
+		$js_file  = $dist_dir . 'wp-search-modal.js';
+		$css_ver  = file_exists( $css_file ) ? (string) filemtime( $css_file ) : WP_SEARCH_VERSION;
+		$js_ver   = file_exists( $js_file ) ? (string) filemtime( $js_file ) : WP_SEARCH_VERSION;
+
 		wp_enqueue_style(
 			'wp-search-modal',
 			WP_SEARCH_PLUGIN_URL . 'assets/dist/wp-search-modal.css',
 			array(),
-			WP_SEARCH_VERSION
+			$css_ver
 		);
 
 		wp_enqueue_script(
 			'wp-search-modal',
 			WP_SEARCH_PLUGIN_URL . 'assets/dist/wp-search-modal.js',
 			array(),
-			WP_SEARCH_VERSION,
+			$js_ver,
 			true
 		);
 
@@ -97,17 +116,18 @@ class Admin {
 			'wp-search-modal',
 			'wp_search_modal_config',
 			array(
-				'rest_url'   => rest_url( REST_Controller::NAMESPACE . REST_Controller::ROUTE ),
-				'rest_nonce' => wp_create_nonce( 'wp_rest' ),
-				'debug_mode' => (bool) get_option( 'wp_search_debug_mode', false ),
-				'strings'    => array(
-					'placeholder' => __( 'Search settings, content, products…', 'wp-search' ),
-					'loading'     => __( 'Loading…', 'wp-search' ),
-					'empty'       => __( 'No results found.', 'wp-search' ),
-					'error'       => __( 'Something went wrong. Please try again.', 'wp-search' ),
-					'navigate'    => __( 'navigate', 'wp-search' ),
-					'select'      => __( 'select', 'wp-search' ),
-					'shortcutHint'=> __( 'Ctrl K', 'wp-search' ),
+				'rest_url'     => rest_url( REST_Controller::NAMESPACE . REST_Controller::ROUTE ),
+				'rest_nonce'   => wp_create_nonce( 'wp_rest' ),
+				'debug_mode'   => (bool) get_option( 'wp_search_debug_mode', false ),
+				'shortcutKey'  => $shortcut_key,
+				'strings'      => array(
+					'placeholder'  => __( 'Search settings, content, products…', 'wp-search' ),
+					'loading'      => __( 'Loading…', 'wp-search' ),
+					'empty'        => __( 'No results found.', 'wp-search' ),
+					'error'        => __( 'Something went wrong. Please try again.', 'wp-search' ),
+					'navigate'     => __( 'navigate', 'wp-search' ),
+					'select'       => __( 'select', 'wp-search' ),
+					'shortcutHint' => sprintf( __( 'Ctrl+%s', 'wp-search' ), strtoupper( $shortcut_key ) ),
 				),
 			)
 		);
@@ -166,6 +186,16 @@ class Admin {
 			)
 		);
 
+		register_setting(
+			'wp_search_settings',
+			'wp_search_shortcut_key',
+			array(
+				'type'              => 'string',
+				'default'           => self::DEFAULT_SHORTCUT_KEY,
+				'sanitize_callback' => array( $this, 'sanitize_shortcut_key' ),
+			)
+		);
+
 		add_settings_section(
 			'wp_search_debug_section',
 			__( 'Debug', 'wp-search' ),
@@ -180,6 +210,21 @@ class Admin {
 			self::PAGE_SLUG,
 			'wp_search_debug_section'
 		);
+
+		add_settings_section(
+			'wp_search_shortcut_section',
+			__( 'Keyboard Shortcut', 'wp-search' ),
+			null,
+			self::PAGE_SLUG
+		);
+
+		add_settings_field(
+			'wp_search_shortcut_key',
+			__( 'Shortcut key', 'wp-search' ),
+			array( $this, 'render_shortcut_key_field' ),
+			self::PAGE_SLUG,
+			'wp_search_shortcut_section'
+		);
 	}
 
 	/**
@@ -193,7 +238,45 @@ class Admin {
 		?>
 		<label>
 			<input type="checkbox" name="wp_search_debug_mode" value="1" <?php checked( $value ); ?> />
-			<?php esc_html_e( 'Redirect Cmd+K to raw REST JSON instead of opening the modal', 'wp-search' ); ?>
+			<?php esc_html_e( 'Output raw REST JSON instead of opening the modal', 'wp-search' ); ?>
+		</label>
+		<?php
+	}
+
+	/**
+	 * Sanitize the shortcut key.
+	 *
+	 * Rejects empty strings and non-a-z characters, falling back to default 't'.
+	 *
+	 * @since 1.0.0
+	 * @param string $value The shortcut key value.
+	 * @return string
+	 */
+	public function sanitize_shortcut_key( string $value ): string {
+		$value = strtolower( trim( $value ) );
+		if ( 1 !== preg_match( '/^[a-z]$/', $value ) ) {
+			return self::DEFAULT_SHORTCUT_KEY;
+		}
+		return $value;
+	}
+
+	/**
+	 * Render the shortcut key field.
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
+	public function render_shortcut_key_field(): void {
+		$value = get_option( 'wp_search_shortcut_key', self::DEFAULT_SHORTCUT_KEY );
+		?>
+		<label>
+			<input type="text" name="wp_search_shortcut_key" value="<?php echo esc_attr( $value ); ?>" maxlength="1" size="1" class="small-text" />
+			<span class="description">
+				<?php
+				esc_html_e( 'Keyboard shortcut key (a–z). Default: t. Example: press Ctrl+', 'wp-search' );
+				echo ' <kbd>' . esc_html( strtoupper( $value ) ) . '</kbd>';
+				?>
+			</span>
 		</label>
 		<?php
 	}
@@ -210,6 +293,8 @@ class Admin {
 			return;
 		}
 
+		$shortcut_key = get_option( 'wp_search_shortcut_key', self::DEFAULT_SHORTCUT_KEY );
+
 		$wp_admin_bar->add_node(
 			array(
 				'id'     => 'wp-search',
@@ -217,7 +302,7 @@ class Admin {
 				'title'  => '<span class="ab-icon dashicons dashicons-search"></span><span class="ab-label">' . esc_html__( 'Search', 'wp-search' ) . '</span>',
 				'href'   => '#',
 				'meta'   => array(
-					'title' => esc_attr__( 'Open search (Ctrl+K)', 'wp-search' ),
+					'title' => esc_attr( sprintf( __( 'Open search (Ctrl/Cmd+%s)', 'wp-search' ), strtoupper( $shortcut_key ) ) ),
 					'class' => 'wp-search-admin-bar-node',
 				),
 			)
@@ -234,6 +319,8 @@ class Admin {
 		if ( ! current_user_can( self::CAPABILITY ) ) {
 			return;
 		}
+
+		$shortcut_key = get_option( 'wp_search_shortcut_key', self::DEFAULT_SHORTCUT_KEY );
 		?>
 		<div class="wrap">
 			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
@@ -243,7 +330,7 @@ class Admin {
 					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
 				</span>
 				<span class="wp-search-tools-trigger__text"><?php esc_html_e( 'Search settings, content, products…', 'wp-search' ); ?></span>
-				<span class="wp-search-tools-trigger__shortcut"><kbd>Ctrl</kbd><kbd>K</kbd></span>
+				<span class="wp-search-tools-trigger__shortcut"><kbd>Ctrl/Cmd</kbd><kbd><?php echo esc_html( strtoupper( $shortcut_key ) ); ?></kbd></span>
 			</div>
 
 			<form method="post" action="options.php">
