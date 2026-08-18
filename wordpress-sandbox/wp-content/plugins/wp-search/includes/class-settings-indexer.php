@@ -493,7 +493,7 @@ class Settings_Indexer extends Indexer implements Spotlight_Provider {
 					'snippetText'  => $snippet_text,
 					'language'     => $this->detect_language( $snippet ),
 					'weight'       => 80,
-					'url'          => admin_url( $slug ),
+					'url'          => admin_url( $slug ) . ( '' !== $field_id ? '#' . $field_id : '' ),
 					'breadcrumb'   => array( __( 'Settings', 'wp-search' ), $page_title ),
 				);
 			}

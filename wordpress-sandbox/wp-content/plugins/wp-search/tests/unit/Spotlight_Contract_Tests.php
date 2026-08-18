@@ -210,7 +210,10 @@ class Spotlight_Contract_Tests extends Test_Case {
 	}
 
 	/**
-	 * Every record in every facet must carry a non-empty url.
+	 * Every synthetic facet record must carry a non-empty url.
+	 *
+	 * This is a wire-contract shape test; real indexer URL behaviour (deep
+	 * links, uniqueness, admin origin) is covered in the indexer-specific suites.
 	 *
 	 * @return void
 	 */

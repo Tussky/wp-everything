@@ -48,8 +48,17 @@ class Users_Indexer_Tests extends Test_Case {
 	protected function setUp(): void {
 		parent::setUp();
 		Functions\when( 'sanitize_text_field' )->returnArg();
-		Functions\when( 'admin_url' )->justReturn( 'https://example.com/wp-admin/user-edit.php' );
+		Functions\when( 'admin_url' )->alias(
+			function ( $path = '' ) {
+				return 'https://example.com/wp-admin/' . ltrim( (string) $path, '/' );
+			}
+		);
 		Functions\when( 'get_avatar_url' )->justReturn( 'https://example.com/avatar.jpg' );
+		Functions\when( 'get_user_meta' )->justReturn( '' );
+		Functions\when( 'translate_user_role' )->returnArg();
+		$roles_stub = Mockery::mock( 'WP_Roles' );
+		$roles_stub->shouldReceive( 'get_names' )->andReturn( array() );
+		Functions\when( 'wp_roles' )->justReturn( $roles_stub );
 	}
 
 	/**
@@ -139,14 +148,79 @@ class Users_Indexer_Tests extends Test_Case {
 	}
 
 	/**
-	 * Reindex is a no-op and should return 0.
+	 * get_records should expose every user as a spotlight record.
 	 *
 	 * @return void
 	 */
-	public function test_reindex_returns_zero(): void {
+	public function test_get_records_returns_spotlight_records(): void {
 		Functions\when( 'current_user_can' )->justReturn( true );
 
+		$user_one = $this->make_user(
+			array(
+				'ID'              => 1,
+				'display_name'    => 'Admin User',
+				'user_login'      => 'admin',
+				'user_email'      => 'admin@example.com',
+				'user_registered' => '2021-03-14 12:00:00',
+				'roles'           => array( 'administrator' ),
+				'allcaps'         => array( 'manage_options' => true ),
+			)
+		);
+		$user_two = $this->make_user(
+			array(
+				'ID'              => 2,
+				'display_name'    => 'Jane Doe',
+				'user_login'      => 'jane',
+				'user_email'      => 'jane@example.com',
+				'user_registered' => '2022-06-02 12:00:00',
+				'roles'           => array( 'editor' ),
+				'allcaps'         => array( 'edit_posts' => true ),
+			)
+		);
+
+		$query = Mockery::mock( 'overload:WP_User_Query' );
+		$query->shouldReceive( 'get_results' )->andReturn( array( $user_one, $user_two ) );
+
 		$indexer = new Users_Indexer();
-		$this->assertSame( 0, $indexer->reindex() );
+		$records = $indexer->get_records();
+
+		$this->assertCount( 2, $records );
+
+		$urls = array();
+		foreach ( $records as $record ) {
+			$this->assertSame( 'users', $record['facet'] );
+			$this->assertArrayHasKey( 'search', $record );
+			$this->assertArrayHasKey( 'display', $record );
+			$this->assertArrayHasKey( 'url', $record['display'] );
+			$this->assertNotEmpty( $record['display']['url'] );
+			$this->assertStringEndsWith( 'user-edit.php?user_id=' . (int) substr( $record['id'], 2 ), $record['display']['url'] );
+			$urls[] = $record['display']['url'];
+		}
+
+		$this->assertSame( array_unique( $urls ), $urls, 'User URLs must be unique.' );
+	}
+
+	/**
+	 * User records from search() also carry the expected deep link and user id.
+	 *
+	 * @return void
+	 */
+	public function test_search_user_url_ends_with_user_id(): void {
+		Functions\when( 'current_user_can' )->justReturn( true );
+
+		$user = $this->make_user(
+			array(
+				'ID' => 42,
+			)
+		);
+
+		$query = Mockery::mock( 'overload:WP_User_Query' );
+		$query->shouldReceive( 'get_results' )->andReturn( array( $user ) );
+
+		$indexer = new Users_Indexer();
+		$results = $indexer->search( 'admin' );
+
+		$this->assertCount( 1, $results );
+		$this->assertStringEndsWith( 'user-edit.php?user_id=42', $results[0]['url'] );
 	}
 }

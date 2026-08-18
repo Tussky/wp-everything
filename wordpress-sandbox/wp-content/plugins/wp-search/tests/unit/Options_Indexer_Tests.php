@@ -35,7 +35,11 @@ class Options_Indexer_Tests extends Test_Case {
 		Functions\when( 'wp_strip_all_tags' )->returnArg();
 		Functions\when( 'is_serialized_string' )->justReturn( false );
 		Functions\when( 'sanitize_text_field' )->returnArg();
-		Functions\when( 'admin_url' )->returnArg();
+		Functions\when( 'admin_url' )->alias(
+			function ( $path = '' ) {
+				return 'https://example.com/wp-admin/' . ltrim( (string) $path, '/' );
+			}
+		);
 
 		self::$fake_rows = array();
 
@@ -247,6 +251,76 @@ class Options_Indexer_Tests extends Test_Case {
 	public function test_reindex_returns_zero(): void {
 		$indexer = new Options_Indexer();
 		$this->assertSame( 0, $indexer->reindex() );
+	}
+
+	/**
+	 * Mapped options route to their dedicated admin screen.
+	 *
+	 * @return void
+	 */
+	public function test_mapped_option_routes_to_dedicated_screen(): void {
+		self::$fake_rows = array(
+			(object) array(
+				'option_name'  => 'permalink_structure',
+				'option_value' => '/%postname%/',
+				'autoload'     => 'yes',
+			),
+		);
+
+		$indexer = new Options_Indexer();
+		$records = $indexer->get_records();
+
+		$this->assertStringEndsWith( 'options-permalink.php', $records[0]['display']['url'] );
+	}
+
+	/**
+	 * Unmapped options fall back to the general options screen.
+	 *
+	 * @return void
+	 */
+	public function test_unmapped_option_falls_back_to_options_general(): void {
+		self::$fake_rows = array(
+			(object) array(
+				'option_name'  => 'some_custom_option',
+				'option_value' => 'value',
+				'autoload'     => 'yes',
+			),
+		);
+
+		$indexer = new Options_Indexer();
+		$records = $indexer->get_records();
+
+		$this->assertStringEndsWith( 'options-general.php', $records[0]['display']['url'] );
+	}
+
+	/**
+	 * Mapped options may share the same destination screen intentionally.
+	 *
+	 * @return void
+	 */
+	public function test_mapped_options_can_share_destination(): void {
+		self::$fake_rows = array(
+			(object) array(
+				'option_name'  => 'siteurl',
+				'option_value' => 'https://example.com',
+				'autoload'     => 'yes',
+			),
+			(object) array(
+				'option_name'  => 'blogname',
+				'option_value' => 'Example Site',
+				'autoload'     => 'yes',
+			),
+		);
+
+		$indexer = new Options_Indexer();
+		$records = $indexer->get_records();
+
+		$this->assertCount( 2, $records );
+		$urls = array_column( array_column( $records, 'display' ), 'url' );
+		$this->assertSame( $urls[0], $urls[1], 'Mapped options may intentionally share a destination.' );
+		foreach ( $urls as $url ) {
+			$this->assertStringEndsWith( 'options-general.php', $url );
+		}
 	}
 
 	/**
