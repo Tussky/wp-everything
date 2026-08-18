@@ -744,7 +744,7 @@
 
 	function getKindLabel(val) {
 		if (val === null) return "null";
-		if (Array.isArray(val)) return "array(" + val.length + ")";
+		if (Array.isArray(val) || Object.prototype.toString.call(val) === "[object Object]") return "array(" + Object.keys(val).length + ")";
 		return typeof val;
 	}
 
