@@ -158,6 +158,10 @@ class Options_Indexer extends Indexer implements Spotlight_Provider {
 		// Stable ID assignment regardless of row order.
 		uksort( $by_name, 'strnatcasecmp' );
 
+		// Mapping from known option names to their admin destination screen.
+		// Multiple options intentionally share the same destination — that is the
+		// correct WordPress behaviour and lets users navigate to the relevant
+		// screen even when no dedicated deep-link exists.
 		$admin_hrefs = array(
 			'siteurl'                     => 'options-general.php',
 			'home'                        => 'options-general.php',

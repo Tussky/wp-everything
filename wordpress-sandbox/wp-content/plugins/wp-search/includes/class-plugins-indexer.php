@@ -83,14 +83,15 @@ class Plugins_Indexer extends Indexer implements Spotlight_Provider {
 				continue;
 			}
 
-$results[] = $this->normalize_record(
+			$plugin_slug = $this->plugin_slug( $plugin_file );
+			$results[] = $this->normalize_record(
 				array(
 					'title'             => $name,
 					'name'              => $name,
 					'description'       => $description,
 					'author'            => $author,
 					'status'            => is_plugin_active( $plugin_file ) ? 'active' : 'inactive',
-					'url'               => admin_url( 'plugins.php' ),
+					'url'               => $this->plugin_admin_url( $plugin_slug ),
 					'plugins_page_link' => admin_url( 'plugins.php' ),
 				)
 			);
@@ -139,6 +140,7 @@ $results[] = $this->normalize_record(
 			$active         = is_plugin_active( $plugin_file );
 			$version        = (string) ( $plugin_data['Version'] ?? '' );
 			$update_version = isset( $updates->response[ $plugin_file ]->new_version ) ? (string) $updates->response[ $plugin_file ]->new_version : null;
+			$plugin_slug    = $this->plugin_slug( $plugin_file );
 
 			$terms = array_filter(
 				array_unique(
@@ -169,7 +171,7 @@ $results[] = $this->normalize_record(
 					'updateAvailable' => $update_version,
 					'author'          => $author,
 					'description'     => $description,
-					'url'             => admin_url( 'plugins.php' ),
+					'url'             => $this->plugin_admin_url( $plugin_slug ),
 				),
 			);
 		}
@@ -218,5 +220,30 @@ $results[] = $this->normalize_record(
 		}
 
 		return false;
+	}
+
+	/**
+	 * Extract the directory slug used to deep-link a plugin on plugins.php.
+	 *
+	 * @since 1.0.0
+	 * @param string $plugin_file Plugin file path (e.g. akismet/akismet.php or standalone.php).
+	 * @return string
+	 */
+	private function plugin_slug( string $plugin_file ): string {
+		if ( false !== strpos( $plugin_file, '/' ) ) {
+			return substr( $plugin_file, 0, strpos( $plugin_file, '/' ) );
+		}
+		return basename( $plugin_file, '.php' );
+	}
+
+	/**
+	 * Build a plugins.php deep link that filters to the given plugin slug.
+	 *
+	 * @since 1.0.0
+	 * @param string $plugin_slug Plugin slug.
+	 * @return string
+	 */
+	private function plugin_admin_url( string $plugin_slug ): string {
+		return admin_url( 'plugins.php?s=' . urlencode( $plugin_slug ) );
 	}
 }

@@ -33,7 +33,11 @@ class Settings_Indexer_Tests extends Test_Case {
 
 		Functions\when( 'is_admin' )->justReturn( true );
 		Functions\when( 'is_user_logged_in' )->justReturn( true );
-		Functions\when( 'admin_url' )->justReturn( 'https://example.com/wp-admin/' );
+		Functions\when( 'admin_url' )->alias(
+			function ( $path = '' ) {
+				return 'https://example.com/wp-admin/' . ltrim( (string) $path, '/' );
+			}
+		);
 		Functions\when( 'wp_strip_all_tags' )->returnArg();
 		Functions\when( 'esc_html' )->returnArg();
 		Functions\when( 'esc_attr' )->returnArg();
@@ -263,5 +267,78 @@ class Settings_Indexer_Tests extends Test_Case {
 
 		$this->assertNotNull( $match );
 		$this->assertSame( array( 'Settings', 'General' ), $match['display']['breadcrumb'] );
+	}
+
+	/**
+	 * Every settings URL contains its page slug and a #fieldId anchor.
+	 *
+	 * @return void
+	 */
+	public function test_settings_urls_contain_page_slug_and_anchor(): void {
+		Functions\when( 'current_user_can' )->justReturn( true );
+
+		$indexer = new Settings_Indexer();
+		$indexer->reindex();
+
+		$found_blogname = false;
+		foreach ( $indexer->get_records() as $record ) {
+			$url = $record['display']['url'];
+			$this->assertStringContainsString( 'options-', $url );
+			$this->assertStringContainsString( '#', $url );
+			if ( str_ends_with( $url, '#blogname' ) ) {
+				$found_blogname = true;
+			}
+		}
+		$this->assertTrue( $found_blogname, 'Expected a blogname settings URL ending with #blogname.' );
+	}
+
+	/**
+	 * Two fields on the same settings page produce different URLs.
+	 *
+	 * @return void
+	 */
+	public function test_two_fields_on_same_page_have_distinct_urls(): void {
+		Functions\when( 'current_user_can' )->justReturn( true );
+
+		$indexer = new Settings_Indexer();
+		$indexer->reindex();
+
+		$urls = array();
+		foreach ( $indexer->get_records() as $record ) {
+			if ( in_array( 'General', $record['display']['breadcrumb'], true ) ) {
+				$urls[] = $record['display']['url'];
+			}
+		}
+
+		$this->assertGreaterThan( 1, count( $urls ), 'Need at least two General fields.' );
+		$this->assertSame( array_unique( $urls ), $urls, 'Each General field must have a unique URL.' );
+	}
+
+	/**
+	 * A field with an empty fieldId falls back to the page URL without a hash.
+	 *
+	 * @return void
+	 */
+	public function test_empty_field_id_fallback_url(): void {
+		Functions\when( 'current_user_can' )->justReturn( true );
+
+		$indexer = new Settings_Indexer();
+		$index_ref = new \ReflectionProperty( $indexer, 'core_settings_map' );
+		$index_ref->setAccessible( true );
+		$map = $index_ref->getValue( $indexer );
+
+		$map['options-general.php']['fields'][''] = array(
+			'label'       => 'Empty field',
+			'description' => '',
+			'type'        => 'text',
+			'class'       => 'regular-text',
+		);
+		$index_ref->setValue( $indexer, $map );
+
+		$indexer->reindex();
+		$records = $indexer->get_records();
+		$urls    = array_column( array_column( $records, 'display' ), 'url' );
+
+		$this->assertContains( 'https://example.com/wp-admin/options-general.php', $urls );
 	}
 }
