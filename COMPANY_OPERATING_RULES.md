@@ -14,8 +14,8 @@ code and deleted 11,260 of them — **81% of all output**. Three plugins were
 started; two were thrown away. The survivor, wp→search, shipped with four
 defects, two of which made it completely non-functional.
 
-The waste was not caused by bad engineering. It was caused by seven specific
-process faults, each of which one rule below closes. The evidence for each is
+The waste was not caused by bad engineering. It was caused by specific process
+faults, each of which one rule below closes. The evidence for each is
 cited so the rule can be argued with rather than obeyed blindly.
 
 ---
@@ -170,6 +170,73 @@ does not apply: fixing it is never "a third issue in flight".
 > `composer` or `vendor/bin` across every `.md` file returned zero matches. An
 > agent that wants to obey "close on pasted command output" has to be told
 > which command. That is what this rule and the block in `AGENTS.md` fix.
+
+## Rule 9 — Read the system; do not retype it
+
+**When the job is to reflect the state of a system, the code reads that system
+at runtime.** A hand-written list of what the system contains is not an
+implementation of that feature. It is a fixture, and it is wrong on every site
+except the one it was typed on.
+
+Apply this test before writing any literal list:
+
+> Would this list be wrong on a different site, on a different WordPress
+> version, or five minutes after someone installs a plugin? Then it is data to
+> be **read**, not data to be **written**.
+
+A literal list is legitimate only when all three of these hold. The third is the
+one that gets skipped:
+
+1. You established there is no API that exposes the data, and you say in the
+   code *where you looked*.
+2. The reason sits at the literal itself, not in a commit message nobody reads.
+3. It **supplements** runtime discovery rather than standing in for it.
+
+**A test written against a hardcoded list tests the list.** Assert coverage
+against the system's own count — never against a second copy of the list under
+test. A test that enumerates the same six things the code enumerates will pass
+forever and prove nothing.
+
+"Deterministic" is not a reason to hardcode. Reading the system on a fixed
+input is equally deterministic; caching the result makes it cheap. If
+determinism is the stated justification for a literal, the justification is
+wrong.
+
+> **Evidence.** `Settings_Indexer` shipped a plugin whose one advertised job is
+> indexing WordPress settings pages, and it never read WordPress. Its index was
+> `$core_settings_map`: **19 fields across 6 pages, typed in by hand.** Privacy
+> was absent. Every plugin settings page was absent. Nine of General's twelve
+> controls were absent. The behaviour users reported — *some settings are
+> findable, most aren't* — was precisely correct: the findable ones were the 19
+> someone had typed.
+>
+> The reasoning error is preserved in the file's own docblock: *"Plugin settings
+> pages beyond the six core options pages are intentionally deferred to a
+> follow-up so this indexer stays deterministic."* Determinism was the stated
+> reason for not reading the system. The replacement reads the system on every
+> layer and is deterministic — verified by rebuilding twice from a cold cache
+> and comparing.
+>
+> **The test suite ratified it.** `test_core_settings_pages_covered` asserted
+> `array( 'General', 'Writing', 'Reading', 'Discussion', 'Media', 'Permalinks' )`
+> — a second copy of the same hardcoded list. It passed. It would have passed
+> forever. All 72 tests passed against a 19-field index for the life of the
+> plugin. This was not "almost caught by testing"; testing is what concealed it,
+> because the assertions were written from the implementation instead of from
+> WordPress. A human noticing that search did not work is what caught it.
+>
+> **It was not one lapse.** `Options_Indexer` carries the same fault:
+> `$known_options`, 13 option names typed in by hand, beside `$admin_hrefs`, a
+> hand-maintained parallel map of where each one lives. Two files away,
+> `Menus_Indexer` line 101 opens with `global $menu, $submenu` and walks the
+> live admin menu — the correct pattern, in the same plugin, available to read
+> the whole time.
+>
+> The fix reads `$submenu`, the Settings API registry, and the rendered pages
+> themselves: **19 records became 81 on a core-only site**, and plugin pages are
+> now found at all. One hardcoded map survives, for the controls core prints
+> rather than registers — it satisfies all three conditions above, and it
+> supplements three discovery layers instead of replacing them.
 
 ---
 
