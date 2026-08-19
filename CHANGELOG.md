@@ -4,6 +4,18 @@ All notable changes to this workspace are recorded here. Dates use UTC.
 Plugin-level changes for SiteMap Redirects live in
 `wordpress-sandbox/wp-content/plugins/site-map-redirects/readme.txt`.
 
+## 2026-08-17
+
+- IA-187: Expanded `Options_Indexer::$known_options` from 13 to 84 entries
+  covering all vanilla WordPress core options (reading, writing, discussion,
+  media, permalinks, theme/plugins, system), each with a one-line explainer and
+  an admin deep link. Raised `RECORDS_LIMIT` 50 → 100 so high-weight options
+  like `siteurl` are no longer dropped by the alphabetical cap before the
+  weight sort. Verified in the sandbox: `wp wp-search spotlight --facet=options`
+  surfaces 50 records (capped by `Spotlight::FACET_CAP`), every record has a
+  non-empty explainer, and `--q=site_url` returns the `siteurl` record with its
+  explainer. `vendor/bin/phpunit` → OK (64 tests, 416 assertions).
+
 ## 2026-08-16
 
 - Fixed the fatal that took WordPress down on every request since 2026-08-12:
