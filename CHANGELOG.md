@@ -6,6 +6,19 @@ Plugin-level changes for SiteMap Redirects live in
 
 ## 2026-08-19
 
+- IA-219: Merged the stranded `fix/ia201` UI work into `fix/ia217-indexing-coverage`.
+  Restored onto this branch: refined liquid-glass modal CSS (overlay/panel
+  opacity, inset highlight, SViz popup), the SViz serialized-value visualizer with
+  `phpUnserialize`, kind chips (`getKindLabel`), and the configurable keyboard
+  shortcut key (`wp_search_shortcut_key` option, default `k`) with `filemtime`
+  cache-busting on the enqueued assets. Added `Cross_Facet_URL_Tests` (T5.2
+  cross-facet URL uniqueness, T5.3 same-origin admin) and adopted `ia201`'s
+  `Plugins_Indexer` deep links (`plugins.php?s=<slug>`) so plugin records carry
+  unique URLs the cross-facet contract requires. `Options_Indexer` and
+  `Settings_Indexer` keep the `ia217` coverage work (all `wp_options` non-
+  transients; live settings discovery). Plugin version 1.0.2 -> 1.1.0 to bust
+  the `wp-search-modal.js?ver=` cache.
+
 - IA-217: Expanded `Options_Indexer` coverage from a curated allow-list to every
   non-transient row in `wp_options`. Known options keep their explainers and
   admin deep links; unknown options fall back to `options-general.php`. Changed

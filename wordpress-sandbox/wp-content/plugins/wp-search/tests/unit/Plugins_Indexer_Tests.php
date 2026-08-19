@@ -24,7 +24,11 @@ class Plugins_Indexer_Tests extends Test_Case {
 		parent::setUp();
 		Functions\when( 'sanitize_text_field' )->returnArg();
 		Functions\when( 'wp_strip_all_tags' )->returnArg();
-		Functions\when( 'admin_url' )->justReturn( 'https://example.com/wp-admin/plugins.php' );
+		Functions\when( 'admin_url' )->alias(
+			function ( $path = '' ) {
+				return 'https://example.com/wp-admin/' . ltrim( (string) $path, '/' );
+			}
+		);
 		Functions\when( 'is_plugin_active' )->justReturn( true );
 		Functions\when( 'get_plugins' )->justReturn( array() );
 		Functions\when( 'get_site_transient' )->justReturn( false );
@@ -175,7 +179,8 @@ class Plugins_Indexer_Tests extends Test_Case {
 					'Name'        => 'Hello Dolly',
 					'Description' => 'A classic WordPress plugin.',
 					'Author'      => 'Matt Mullenweg',
-									),
+					'Version'     => '1.7.2',
+				),
 			)
 		);
 		Functions\when( 'is_plugin_active' )->justReturn( true );
@@ -194,5 +199,98 @@ class Plugins_Indexer_Tests extends Test_Case {
 		$this->assertTrue( $record['display']['active'] );
 		$this->assertArrayHasKey( 'url', $record['display'] );
 		$this->assertNotEmpty( $record['display']['url'] );
+		$this->assertStringEndsWith( 'plugins.php?s=hello', $record['display']['url'] );
+	}
+
+	/**
+	 * Plugin URLs carry the plugin slug so each result points to a distinct
+	 * plugins.php search. Both directory/file.php and standalone.php file
+	 * shapes must resolve to a slug.
+	 *
+	 * @return void
+	 */
+	public function test_plugin_urls_are_distinct_per_file_shape(): void {
+		Functions\when( 'current_user_can' )->justReturn( true );
+		Functions\when( 'get_plugins' )->justReturn(
+			array(
+				'hello/hello.php'       => array(
+					'Name'        => 'Hello Dolly',
+					'Description' => '',
+					'Author'      => '',
+					'Version'     => '1.0',
+				),
+				'akismet/akismet.php'     => array(
+					'Name'        => 'Akismet',
+					'Description' => '',
+					'Author'      => '',
+					'Version'     => '1.0',
+				),
+				'standalone/standalone.php' => array(
+					'Name'        => 'Standalone',
+					'Description' => '',
+					'Author'      => '',
+					'Version'     => '1.0',
+				),
+				'single-file.php'         => array(
+					'Name'        => 'Single File',
+					'Description' => '',
+					'Author'      => '',
+					'Version'     => '1.0',
+				),
+			)
+		);
+		Functions\when( 'is_plugin_active' )->alias(
+			function ( $plugin_file ) {
+				return 'akismet/akismet.php' !== $plugin_file;
+			}
+		);
+
+		$indexer = new Plugins_Indexer();
+		$records = $indexer->get_records();
+
+		$this->assertCount( 4, $records );
+
+		$expected = array(
+			'hello/hello.php'             => 'plugins.php?s=hello',
+			'akismet/akismet.php'         => 'plugins.php?s=akismet',
+			'standalone/standalone.php'   => 'plugins.php?s=standalone',
+			'single-file.php'             => 'plugins.php?s=single-file',
+		);
+		$urls     = array();
+
+		foreach ( $records as $record ) {
+			$slug = $record['display']['slug'];
+			$this->assertStringEndsWith( $expected[ $slug ], $record['display']['url'] );
+			$urls[] = $record['display']['url'];
+		}
+
+		$this->assertSame( array_unique( $urls ), $urls, 'Plugin URLs must be distinct.' );
+	}
+
+	/**
+	 * Inactive plugins are reachable from the same deep-link shape as active ones.
+	 *
+	 * @return void
+	 */
+	public function test_inactive_plugin_has_deep_link_url(): void {
+		Functions\when( 'current_user_can' )->justReturn( true );
+		Functions\when( 'get_plugins' )->justReturn(
+			array(
+				'dormant/dormant.php' => array(
+					'Name'        => 'Dormant',
+					'Description' => '',
+					'Author'      => '',
+					'Version'     => '1.0',
+				),
+			)
+		);
+		Functions\when( 'is_plugin_active' )->justReturn( false );
+
+		$indexer = new Plugins_Indexer();
+		$records = $indexer->get_records();
+
+		$this->assertCount( 1, $records );
+		$this->assertFalse( $records[0]['display']['active'] );
+		$this->assertStringEndsWith( 'plugins.php?s=dormant', $records[0]['display']['url'] );
 	}
 }
