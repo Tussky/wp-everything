@@ -7,7 +7,7 @@ You are working inside an AI Labs Cohort #2 Paperclip hackathon participant comp
 **`COMPANY_OPERATING_RULES.md` is binding and overrides any plan, delegation
 document, or issue body that conflicts with it.** Read it before starting work.
 
-The eight rules in short form:
+The nine rules in short form:
 
 1. Nothing enters docs / assets / release / audit until a human has confirmed the
    feature works in the sandbox.
@@ -25,6 +25,11 @@ The eight rules in short form:
    triggers in the rules file.
 8. Code that does not boot does not get pushed. Both CI checks must be green.
    `--no-verify` is forbidden. See the block below — it is not optional.
+9. Read the system; do not retype it. If the code's job is to reflect what a
+   system contains, it reads that system at runtime. A hardcoded list of what
+   WordPress contains is a fixture, not an implementation — and a test that
+   asserts against a copy of that list proves nothing. "Deterministic" is not a
+   reason to hardcode.
 
 **`/archive/` contains obsolete plans for two deleted plugins. Nothing in it is a
 live instruction.** If a pointer sends you there, you followed a stale reference —
