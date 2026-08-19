@@ -31,12 +31,15 @@ class Options_Indexer extends Indexer implements Spotlight_Provider {
 	const SOURCE = 'options';
 
 	/**
-	 * Maximum number of option records surfaced in the spotlight response.
+	 * WordPress option names used to cache transient data.
 	 *
 	 * @since 1.0.0
-	 * @var int
+	 * @var array<string>
 	 */
-	const RECORDS_LIMIT = 50;
+	const TRANSIENT_PREFIXES = array(
+		'_transient_%',
+		'_site_transient_%',
+	);
 
 	/**
 	 * Option families surfaced by this indexer, with weight and explainer.
@@ -136,13 +139,12 @@ class Options_Indexer extends Indexer implements Spotlight_Provider {
 
 		global $wpdb;
 
-		$option_names = array_keys( $this->known_options );
-		$placeholders = implode( ', ', array_fill( 0, count( $option_names ), '%s' ) );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.DirectQuery -- live options, trivial row count.
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT option_name, option_value, autoload FROM {$wpdb->options} WHERE option_name IN ({$placeholders})",
-				...$option_names
+				"SELECT option_name, option_value, autoload FROM {$wpdb->options} WHERE option_name NOT LIKE %s AND option_name NOT LIKE %s ORDER BY option_name ASC",
+				self::TRANSIENT_PREFIXES[0],
+				self::TRANSIENT_PREFIXES[1]
 			)
 		);
 
@@ -179,9 +181,6 @@ class Options_Indexer extends Indexer implements Spotlight_Provider {
 
 		foreach ( $by_name as $name => $row ) {
 			$index++;
-			if ( $index > self::RECORDS_LIMIT ) {
-				break;
-			}
 			$known     = $this->known_options[ $name ] ?? array(
 				'weight'    => 40,
 				'explainer' => 'WordPress option.',
