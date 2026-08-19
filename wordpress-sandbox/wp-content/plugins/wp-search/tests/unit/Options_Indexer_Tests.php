@@ -270,7 +270,7 @@ class Options_Indexer_Tests extends Test_Case {
 		$indexer = new Options_Indexer();
 		$records = $indexer->get_records();
 
-		$this->assertStringEndsWith( 'options-permalink.php', $records[0]['display']['url'] );
+		$this->assertStringEndsWith( 'options-permalink.php#permalink_structure', $records[0]['display']['url'] );
 	}
 
 	/**
