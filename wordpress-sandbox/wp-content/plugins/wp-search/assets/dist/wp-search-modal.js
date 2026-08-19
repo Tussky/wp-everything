@@ -646,6 +646,18 @@
 		}
 	}
 
+	// Navigate to the record's URL if it has one.
+	function navigateToRecord(id) {
+		var flat = refs.flat || [];
+		var item = null;
+		for (var i = 0; i < flat.length; i++) {
+			if (flat[i].id === id) { item = flat[i]; break; }
+		}
+		if (item && item.item && item.item.url) {
+			window.location.assign(item.item.url);
+		}
+	}
+
 	function mount(root) {
 		root.innerHTML =
 			'<div class="wpss-overlay">' +
@@ -679,14 +691,7 @@
 				e.preventDefault();
 				refs.panel.classList.add("is-flash");
 				setTimeout(function () { refs.panel.classList.remove("is-flash"); }, 320);
-				var sel = null;
-				var flat = refs.flat || [];
-				for (var i = 0; i < flat.length; i++) {
-					if (flat[i].id === state.selectedId) { sel = flat[i]; break; }
-				}
-				if (sel && sel.item && sel.item.url) {
-					window.location.assign(sel.item.url);
-				}
+				navigateToRecord(state.selectedId);
 			} else if (e.key === "Escape") {
 				e.preventDefault();
 				close();
@@ -705,6 +710,16 @@
 			var row = e.target.closest ? e.target.closest("[data-row]") : null;
 			if (row && row.getAttribute("data-row") !== state.selectedId) {
 				setSelected(row.getAttribute("data-row"));
+			}
+		});
+
+		// Click a row to navigate to its URL, using the clicked row (not the
+		// hover selection) so the 6.6 hover-vs-click trap is avoided.
+		refs.body.addEventListener("click", function (e) {
+			var row = e.target.closest ? e.target.closest(".wpss-row") : null;
+			if (row) {
+				e.stopPropagation();
+				navigateToRecord(row.getAttribute("data-row"));
 			}
 		});
 

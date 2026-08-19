@@ -6,6 +6,28 @@ Plugin-level changes for SiteMap Redirects live in
 
 ## 2026-08-18
 
+- Fixed: clicking a search result navigates again. Result rows stopped being
+  links in IA-190 (`c8fabd3`). Before that, `renderResults()` emitted each row
+  as `<a href="{url}" class="wp-search-modal__item">` and the browser handled
+  the click natively. The Spotlight shell rewrote rows as
+  `<button type="button" class="wpss-row" data-row="{id}">` and bound only
+  `mousemove` (hover selection) and `keydown` on the input (Enter navigates).
+  No `click` listener was ever bound to a row, so a bare `<button>` outside a
+  form did nothing while `cursor:pointer` kept advertising otherwise. Enter
+  still worked, which is why it survived review.
+
+  A delegated `click` listener on `#wpss-body` now resolves the clicked row
+  through `navigateToRecord()`, and Enter was refactored onto the same
+  function so keyboard and pointer cannot drift apart again. Navigation
+  resolves the *clicked* row rather than the hover selection, so a click that
+  lands before the hover repaint goes where it was aimed. Ported from IA-201
+  (`60acea5`) on `fix/ia201`, which never merged.
+
+- Plugin version 1.0.0 -> 1.0.1. `WP_SEARCH_VERSION` is the cache-buster
+  passed to `wp_enqueue_script()`, so without the bump browsers holding
+  `wp-search-modal.js?ver=1.0.0` would keep serving the copy with no click
+  handler and the fix would not appear.
+
 - Settings indexing rewritten from a hardcoded list to live discovery. The
   index was 19 fields typed into `$core_settings_map` across 6 pages; that is
   the whole reason "some settings pages work, some don't". On a core-only site
