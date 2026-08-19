@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Indexes and searches public posts and pages.
+ * Indexes and searches all public post types.
  *
  * @since 1.0.0
  */
@@ -27,14 +27,6 @@ class Posts_Indexer extends Indexer {
 	 * @var string
 	 */
 	const SOURCE = 'content';
-
-	/**
-	 * Default post types to search.
-	 *
-	 * @since 1.0.0
-	 * @var array<string>
-	 */
-	const DEFAULT_POST_TYPES = array( 'post', 'page' );
 
 	/**
 	 * Maximum number of results to return.
@@ -55,10 +47,21 @@ class Posts_Indexer extends Indexer {
 	/**
 	 * Constructor.
 	 *
+	 * When no post types are supplied, the indexer covers every public post type
+	 * registered in WordPress at runtime.
+	 *
 	 * @since 1.0.0
 	 * @param array<string> $post_types Post types to search.
 	 */
-	public function __construct( array $post_types = self::DEFAULT_POST_TYPES ) {
+	public function __construct( ?array $post_types = null ) {
+		if ( null === $post_types ) {
+			$post_types = get_post_types(
+				array(
+					'public' => true,
+				),
+				'names'
+			);
+		}
 		$this->post_types = array_filter( array_map( 'sanitize_key', $post_types ) );
 	}
 
