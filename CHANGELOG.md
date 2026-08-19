@@ -6,6 +6,56 @@ Plugin-level changes for SiteMap Redirects live in
 
 ## 2026-08-19
 
+- IA-218: Lifted the Spotlight UI from `fix/ia201` onto production. Three
+  features had been built on that branch and never merged, because production
+  has been rebuilt from it one feature at a time (PR #20 took the click handler
+  as JS only; PR #21 rebuilt IA-217 on a fresh branch) and each pass skipped the
+  UI commits.
+
+  - **Liquid-glass overlay.** The overlay had been opaque `background-color:
+    #0b0d14` with no `backdrop-filter` since IA-190 (`c8fabd3`) — a solid screen
+    over wp-admin rather than a frosted one. It is now
+    `background:rgba(8,10,16,.34)` with `blur(4px) saturate(140%)`, and the panel
+    drops from `blur(44px)` to `blur(8px)` with an inset highlight. Carries a
+    `prefers-reduced-transparency` / `forced-colors` fallback that production
+    did not have.
+  - **Serialized-PHP visualizer** (IA-210). A `Visualize` control on option rows
+    renders a serialized value as a structured list with a kind chip and a raw
+    fallback. Entirely client-side: `phpUnserialize(o.value)` reads only `id`,
+    `name` and `value`, all of which the options facet already emits, so no
+    indexer changed.
+  - **Configurable keyboard shortcut** (IA-209). `wp_search_shortcut_key`,
+    default `j` per the IA-195 resolution. Every label now derives from the
+    setting — `shortcutHint`, the admin-bar title and the Tools trigger — so the
+    displayed key cannot drift from the bound one.
+
+  Also lifted: `enqueue_assets()` now versions the CSS and JS by `filemtime()`
+  and falls back to `WP_SEARCH_VERSION`, so edits bust the cache without a
+  version bump.
+
+  Taken as three files rather than a merge. `fix/ia201` forked before PR #18 and
+  still carries the pre-rewrite 607-line `class-settings-indexer.php` against
+  production's 1958-line live-discovery version; a merge would have regressed
+  settings search and conflicts in four files. The two JS files and
+  `class-admin.php` carry the whole payload and touch no indexer.
+  `class-admin.php` was verified to be a strict superset of production's — no
+  method or behaviour lost, `print_spotlight_bootstrap()` untouched.
+
+  Plugin 1.0.2 -> 1.0.3. Verified: `php -l` clean; `node --check` clean on both
+  JS files; `assets/js/admin.js` byte-identical to
+  `assets/dist/wp-search-modal.js`; `vendor/bin/phpunit` OK (88 tests, 1343
+  assertions), matching production's baseline exactly. Not yet confirmed against
+  a live site — Rule 1 outstanding.
+
+- IA-218: Pushed `rescue/ia199-liquid-glass-blur` (`4846e1e`) and
+  `rescue/ia204-liquid-glass-restore` (`51bfc71`) to origin. PR #16 merged one
+  commit from `fix/ia191-delete-spotlight-fixture`; two more were pushed to that
+  branch afterwards and the branch was then deleted, leaving both reachable from
+  no ref and eligible for garbage collection. Their glass CSS is byte-identical
+  to `fafff33`, so nothing unique was at risk, but the commits are now anchored.
+  Commit `64768be` — the "PRESERVE" state both messages cite — does not exist in
+  this repository and is not recoverable from it.
+
 - IA-217: Expanded `Options_Indexer` coverage from a curated allow-list to every
   non-transient row in `wp_options`. Known options keep their explainers and
   admin deep links; unknown options fall back to `options-general.php`. Changed
