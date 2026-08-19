@@ -50,6 +50,7 @@ class Posts_Indexer_Tests extends Test_Case {
 		Functions\when( 'get_the_title' )->returnArg();
 		Functions\when( 'get_the_excerpt' )->justReturn( 'Excerpt' );
 		Functions\when( 'wp_reset_postdata' )->justReturn( null );
+		Functions\when( 'get_post_types' )->justReturn( array( 'post', 'page' ) );
 	}
 
 	/**
@@ -155,6 +156,32 @@ class Posts_Indexer_Tests extends Test_Case {
 		$results = $indexer->search( 'hello' );
 
 		$this->assertSame( 'https://example.com/hello-world/', $results[0]['url'] );
+	}
+
+	/**
+	 * When no post types are provided, the indexer should query all public post types.
+	 *
+	 * @return void
+	 */
+	public function test_default_post_types_are_all_public_post_types(): void {
+		Functions\when( 'get_post_types' )->justReturn( array( 'post', 'page', 'custom_type' ) );
+
+		$indexer  = new Posts_Indexer();
+		$property = new \ReflectionProperty( $indexer, 'post_types' );
+
+		$this->assertSame( array( 'post', 'page', 'custom_type' ), $property->getValue( $indexer ) );
+	}
+
+	/**
+	 * Explicit post types should override the public-post-type default.
+	 *
+	 * @return void
+	 */
+	public function test_explicit_post_types_override_public_default(): void {
+		$indexer  = new Posts_Indexer( array( 'custom_type' ) );
+		$property = new \ReflectionProperty( $indexer, 'post_types' );
+
+		$this->assertSame( array( 'custom_type' ), $property->getValue( $indexer ) );
 	}
 
 	/**

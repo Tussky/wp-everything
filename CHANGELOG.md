@@ -4,6 +4,16 @@ All notable changes to this workspace are recorded here. Dates use UTC.
 Plugin-level changes for SiteMap Redirects live in
 `wordpress-sandbox/wp-content/plugins/site-map-redirects/readme.txt`.
 
+## 2026-08-19
+
+- IA-217: Expanded `Options_Indexer` coverage from a curated allow-list to every
+  non-transient row in `wp_options`. Known options keep their explainers and
+  admin deep links; unknown options fall back to `options-general.php`. Changed
+  `Posts_Indexer` to discover all `public => true` post types via
+  `get_post_types()` instead of the hardcoded `['post','page']` default, while
+  still allowing an explicit list. Bumped `wp-search` to 1.0.2. Verified with
+  `php -l` and `vendor/bin/phpunit` (85 tests, 663 assertions).
+
 ## 2026-08-18
 
 - Fixed: clicking a search result navigates again. Result rows stopped being
