@@ -852,6 +852,18 @@
 		}
 	}
 
+	// Navigate to the record's URL if it has one.
+	function navigateToRecord(id) {
+		var flat = refs.flat || [];
+		var item = null;
+		for (var i = 0; i < flat.length; i++) {
+			if (flat[i].id === id) { item = flat[i]; break; }
+		}
+		if (item && item.item && item.item.url) {
+			window.location.assign(item.item.url);
+		}
+	}
+
 	function mount(root) {
 		root.innerHTML =
 			'<div class="wpss-overlay">' +
@@ -890,14 +902,7 @@
 				e.preventDefault();
 				refs.panel.classList.add("is-flash");
 				setTimeout(function () { refs.panel.classList.remove("is-flash"); }, 320);
-				var sel = null;
-				var flat = refs.flat || [];
-				for (var i = 0; i < flat.length; i++) {
-					if (flat[i].id === state.selectedId) { sel = flat[i]; break; }
-				}
-				if (sel && sel.item && sel.item.url) {
-					window.location.assign(sel.item.url);
-				}
+				navigateToRecord(state.selectedId);
 			} else if (e.key === "Escape") {
 				if (state.svizActive) {
 					e.preventDefault();
@@ -928,10 +933,14 @@
 			if (!e.target.closest("#wpss-panel")) close();
 		});
 
-		// Click on Visualize button opens serialized popup.
+		// One delegated handler for the results body. Visualize is checked first
+		// and returns, so opening the popup never also navigates away.
 		refs.body.addEventListener("click", function (e) {
-			var btn = e.target.closest ? e.target.closest(".wpss-sviz-btn") : null;
+			if (!e.target.closest) return;
+
+			var btn = e.target.closest(".wpss-sviz-btn");
 			if (btn && btn.getAttribute("data-sviz")) {
+				e.stopPropagation();
 				var id = btn.getAttribute("data-sviz");
 				var flat = refs.flat || [];
 				for (var i = 0; i < flat.length; i++) {
@@ -940,6 +949,15 @@
 						break;
 					}
 				}
+				return;
+			}
+
+			// Click a row to navigate to its URL, using the clicked row (not the
+			// hover selection) so the hover-vs-click trap is avoided.
+			var row = e.target.closest(".wpss-row");
+			if (row) {
+				e.stopPropagation();
+				navigateToRecord(row.getAttribute("data-row"));
 			}
 		});
 

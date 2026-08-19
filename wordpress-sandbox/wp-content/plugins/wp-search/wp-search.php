@@ -3,7 +3,7 @@
  * Plugin Name: wp->search
  * Plugin URI:  https://github.com/paperclip/wp-search
  * Description: A WordPress admin search plugin that indexes registered settings pages and surfaces them through a REST endpoint.
- * Version:     1.0.3
+ * Version:     1.0.4
  * Author:      Paperclip
  * Author URI:  https://paperclip.ing
  * License:     GPL-2.0-or-later
@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 if ( ! defined( 'WP_SEARCH_VERSION' ) ) {
-	define( 'WP_SEARCH_VERSION', '1.0.3' );
+	define( 'WP_SEARCH_VERSION', '1.0.4' );
 }
 
 if ( ! defined( 'WP_SEARCH_PLUGIN_FILE' ) ) {
