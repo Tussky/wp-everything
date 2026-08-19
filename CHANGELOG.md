@@ -6,6 +6,28 @@ Plugin-level changes for SiteMap Redirects live in
 
 ## 2026-08-19
 
+- IA-219: Restored row-click navigation, which IA-218 (#22) regressed. Clicking
+  a result stopped navigating again — the same defect PR #20 had fixed.
+
+  Cause: `fix/ia201` is not a linear improvement on itself. `60acea5` added
+  `navigateToRecord()` and the row-click delegation; the later IA-209 commit
+  (`fafff33`) replaced `assets/js/admin.js` wholesale with the PRESERVE state,
+  which predated that work and silently dropped it. The branch tip therefore had
+  liquid glass and the visualizer but no click handler, and #22 lifted the tip.
+  On production the `refs.body` click listener handled only `.wpss-sviz-btn`,
+  and the Enter branch had reverted to its pre-IA-201 inline form.
+
+  `navigateToRecord()` is back, Enter routes through it again, and the body now
+  carries one delegated listener that checks `.wpss-sviz-btn` first and returns
+  — so opening the serialized-value popup cannot also navigate away — before
+  falling through to `.wpss-row`. Plugin 1.0.3 -> 1.0.4.
+
+  The #22 verification is what allowed this through: it grepped for the two
+  features being added and never asserted that the feature added two PRs earlier
+  survived. The DoD for this change checks both directions, and `grep -c 'if
+  (sel && sel.item && sel.item.url)'` returning 0 is now an explicit criterion
+  so the inline Enter form cannot creep back.
+
 - IA-218: Lifted the Spotlight UI from `fix/ia201` onto production. Three
   features had been built on that branch and never merged, because production
   has been rebuilt from it one feature at a time (PR #20 took the click handler
